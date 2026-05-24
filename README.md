@@ -89,25 +89,6 @@ Task {
     for update in updates { ... }
 }
 ```
-
-### 3. スレッドセーフな遅延ロード DB
-
-`ZipTimeZoneDB` / `AreaCodeTimeZoneDB` は専用の `DispatchQueue` で CSV の読み込みと参照を保護します。
-`preload()` は非同期で先読みを開始し、初回アクセス時に未完了であれば `queue.sync` で待機します。
-
-```swift
-func timeZoneIdentifier(for zip: String) -> String? {
-    queue.sync {          // 読み込み完了を保証しつつスレッドセーフに参照
-        loadIfNeeded()
-        return map[zip]
-    }
-}
-```
-
-### 4. 重複コードの排除
-
-リファクタリングにより、4 ファイルに重複していた `normalizeSpace` などのユーティリティ関数を `ParserUtils.swift` に一元化。タイムゾーン解決ロジック（旧 ContentView 内 ~80 行）は `TimeZoneResolver.swift` に分離し、ContentView の責務を UI に限定しました。
-
 ---
 
 ## ファイル構成
