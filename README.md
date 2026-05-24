@@ -24,7 +24,7 @@ Apple の Vision フレームワークを用いた OCR と、独自のパーサ�
 
 | カード一覧 | スキャン中 | 編集画面 |
 |:-----------:|:---------:|:--------:|
-| <img src="docs/screenshot_list.png" width="200"> | <img src="docs/screenshot_scan.png" width="200"> | <img src="docs/screenshot_edit.png" width="200"> |
+| <img src="docs/screenshot_list.png" width="200"> | <img src="docs/screenshot_edit.png" width="200"> |
 
 ---
 
