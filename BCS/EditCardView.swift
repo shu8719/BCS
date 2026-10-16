@@ -3,6 +3,8 @@ import SwiftUI
 struct EditCardView: View {
     @EnvironmentObject private var settings: AppSettings
     @Binding var card: BusinessCard
+    /// Called with the edited card when the user taps Save (not on Cancel).
+    var onSave: ((BusinessCard) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var draft = BusinessCard()
 
@@ -54,12 +56,13 @@ struct EditCardView: View {
             .onAppear { draft = card }
             .navigationTitle(L10n.t(.edit, lang: settings.language))
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button(L10n.t(.cancel, lang: settings.language)) { dismiss() }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button(L10n.t(.save, lang: settings.language)) {
                         card = draft
+                        onSave?(draft)
                         dismiss()
                     }
                     .fontWeight(.bold)

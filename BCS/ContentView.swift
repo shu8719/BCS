@@ -6,6 +6,7 @@ struct ContentView: View {
 
     @State private var showScanner = false
     @State private var showEditSheet = false
+    @State private var showScanDraftEditor = false
     @State private var scanDraft = BusinessCard()
     @State private var exportItem: ExportItem?
     @State private var activeAlert: ActiveAlert?
@@ -16,16 +17,8 @@ struct ContentView: View {
     private let accent     = Color(red: 0.16, green: 0.46, blue: 0.86)
     private let accentSoft = Color(red: 0.84, green: 0.90, blue: 1.00)
 
-    private enum ActiveAlert: Identifiable {
+    private enum ActiveAlert {
         case deleteSelected, resetAll, scanEmpty, scanFailed
-        var id: Int {
-            switch self {
-            case .deleteSelected: return 0
-            case .resetAll:       return 1
-            case .scanEmpty:      return 2
-            case .scanFailed:     return 3
-            }
-        }
     }
 
     private struct ExportItem: Identifiable {
@@ -90,13 +83,16 @@ struct ContentView: View {
                 card: $scanDraft,
                 onFinish: {
                     isProcessing = false
-                    store.append(scanDraft)
-                    showEditSheet = true
+                    showScanDraftEditor = true
                 },
                 onEmpty:  { isProcessing = false; activeAlert = .scanEmpty },
                 onFailed: { isProcessing = false; activeAlert = .scanFailed },
                 onStartProcessing: { isProcessing = true }
             )
+        }
+        .sheet(isPresented: $showScanDraftEditor) {
+            // The scanned card is stored only when the user taps Save; Cancel discards it.
+            EditCardView(card: $scanDraft, onSave: { store.append($0) })
         }
         .sheet(isPresented: $showEditSheet) {
             if let idx = store.selectedIndex, store.cards.indices.contains(idx) {
@@ -107,39 +103,46 @@ struct ContentView: View {
             ShareSheet(items: [item.url])
                 .onDisappear { try? FileManager.default.removeItem(at: item.url) }
         }
-        .alert(item: $activeAlert) { alert in
+        .alert(
+            Text(activeAlert.map(alertTitle(for:)) ?? ""),
+            isPresented: Binding(
+                get: { activeAlert != nil },
+                set: { if !$0 { activeAlert = nil } }
+            ),
+            presenting: activeAlert
+        ) { alert in
             switch alert {
             case .deleteSelected:
-                return Alert(
-                    title: Text(L10n.t(.deleteSelectedTitle, lang: settings.language)),
-                    message: Text(L10n.t(.deleteSelectedMessage, lang: settings.language)),
-                    primaryButton: .destructive(Text(L10n.t(.deleteAction, lang: settings.language))) {
-                        store.deleteSelected()
-                    },
-                    secondaryButton: .cancel(Text(L10n.t(.cancel, lang: settings.language)))
-                )
+                Button(L10n.t(.deleteAction, lang: settings.language), role: .destructive) { store.deleteSelected() }
+                Button(L10n.t(.cancel, lang: settings.language), role: .cancel) {}
             case .resetAll:
-                return Alert(
-                    title: Text(L10n.t(.resetAllTitle, lang: settings.language)),
-                    message: Text(L10n.t(.resetAllMessage, lang: settings.language)),
-                    primaryButton: .destructive(Text(L10n.t(.resetAction, lang: settings.language))) {
-                        store.resetAll()
-                    },
-                    secondaryButton: .cancel(Text(L10n.t(.cancel, lang: settings.language)))
-                )
-            case .scanEmpty:
-                return Alert(
-                    title: Text(L10n.t(.scanEmptyTitle, lang: settings.language)),
-                    message: Text(L10n.t(.scanEmptyMessage, lang: settings.language)),
-                    dismissButton: .default(Text(L10n.t(.ok, lang: settings.language)))
-                )
-            case .scanFailed:
-                return Alert(
-                    title: Text(L10n.t(.scanFailedTitle, lang: settings.language)),
-                    message: Text(L10n.t(.scanFailedMessage, lang: settings.language)),
-                    dismissButton: .default(Text(L10n.t(.ok, lang: settings.language)))
-                )
+                Button(L10n.t(.resetAction, lang: settings.language), role: .destructive) { store.resetAll() }
+                Button(L10n.t(.cancel, lang: settings.language), role: .cancel) {}
+            case .scanEmpty, .scanFailed:
+                Button(L10n.t(.ok, lang: settings.language), role: .cancel) {}
             }
+        } message: { alert in
+            Text(alertMessage(for: alert))
+        }
+    }
+
+    // MARK: - Alerts
+
+    private func alertTitle(for alert: ActiveAlert) -> String {
+        switch alert {
+        case .deleteSelected: return L10n.t(.deleteSelectedTitle, lang: settings.language)
+        case .resetAll:       return L10n.t(.resetAllTitle,       lang: settings.language)
+        case .scanEmpty:      return L10n.t(.scanEmptyTitle,      lang: settings.language)
+        case .scanFailed:     return L10n.t(.scanFailedTitle,     lang: settings.language)
+        }
+    }
+
+    private func alertMessage(for alert: ActiveAlert) -> String {
+        switch alert {
+        case .deleteSelected: return L10n.t(.deleteSelectedMessage, lang: settings.language)
+        case .resetAll:       return L10n.t(.resetAllMessage,       lang: settings.language)
+        case .scanEmpty:      return L10n.t(.scanEmptyMessage,      lang: settings.language)
+        case .scanFailed:     return L10n.t(.scanFailedMessage,     lang: settings.language)
         }
     }
 
@@ -155,13 +158,13 @@ struct ContentView: View {
                     .frame(width: 16, height: 16)
                 Text(title)
                     .font(.custom("AvenirNext-Medium", size: 11))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             if let badge {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(value.isEmpty ? "Unknown" : value)
                         .font(.custom("AvenirNext-Regular", size: 16))
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                         .layoutPriority(1)
                     Spacer(minLength: 4)
                     timeZoneBadge(badge)
@@ -169,7 +172,7 @@ struct ContentView: View {
             } else {
                 Text(value.isEmpty ? "Unknown" : value)
                     .font(.custom("AvenirNext-Regular", size: 16))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
             }
         }
     }
@@ -194,10 +197,10 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(L10n.t(.title, lang: settings.language))
                     .font(.custom("AvenirNext-DemiBold", size: 32))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 Text(cardCountText())
                     .font(.custom("AvenirNext-Regular", size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
         }
@@ -205,16 +208,10 @@ struct ContentView: View {
 
     private func cardCountText() -> String {
         let count = store.cards.count
-        switch resolvedLanguage() {
+        switch L10n.resolve(settings.language) {
         case .japanese:         return "\(count)件"
         case .english, .system: return "\(count) cards"
         }
-    }
-
-    private func resolvedLanguage() -> AppSettings.Language {
-        if settings.language != .system { return settings.language }
-        let preferred = Locale.preferredLanguages.first ?? "en"
-        return preferred.hasPrefix("ja") ? .japanese : .english
     }
 
     private var summaryCard: some View {
@@ -238,14 +235,14 @@ struct ContentView: View {
         VStack(spacing: 8) {
             Text(L10n.t(.emptyCardsMessage, lang: settings.language))
                 .font(.custom("AvenirNext-Regular", size: 14))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                .foregroundColor(accent.opacity(0.2))
+                .foregroundStyle(accent.opacity(0.2))
         )
     }
 
@@ -254,17 +251,17 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(displayTitle(card))
                     .font(.custom("AvenirNext-DemiBold", size: 16))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 if !card.company.isEmpty {
                     Text(card.company)
                         .font(.custom("AvenirNext-Regular", size: 12))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             Spacer()
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(accent)
+                    .foregroundStyle(accent)
             }
         }
         .padding(12)
@@ -283,7 +280,7 @@ struct ContentView: View {
             if let state = store.undoState {
                 Text(undoMessage(for: state.operation))
                     .font(.custom("AvenirNext-Regular", size: 12))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Button(L10n.t(.undo, lang: settings.language)) {
                     store.restoreUndo()
@@ -372,7 +369,7 @@ struct ContentView: View {
                 .padding(.vertical, 10)
                 .padding(.horizontal, 16)
                 .background(background.opacity(configuration.isPressed ? 0.85 : 1.0))
-                .foregroundColor(foreground)
+                .foregroundStyle(foreground)
                 .clipShape(Capsule())
         }
     }
@@ -431,7 +428,7 @@ struct ContentView: View {
             .padding(.vertical, 4)
             .padding(.horizontal, 8)
             .background(badge.color.opacity(0.18))
-            .foregroundColor(badge.color)
+            .foregroundStyle(badge.color)
             .clipShape(Capsule())
     }
 

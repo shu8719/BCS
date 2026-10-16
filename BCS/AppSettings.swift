@@ -10,14 +10,15 @@ final class AppSettings: ObservableObject {
         var id: String { rawValue }
     }
     
-    @AppStorage("app_language") var languageRaw: String = Language.system.rawValue
+    private static let storageKey = "app_language"
     
-    var language: Language {
-        get { Language(rawValue: languageRaw) ?? .system }
-        set {
-            languageRaw = newValue.rawValue
-            objectWillChange.send()   // これでUIが確実に更新される
-        }
+    // Single source of truth: @Published drives view updates, didSet persists.
+    @Published var language: Language {
+        didSet { UserDefaults.standard.set(language.rawValue, forKey: Self.storageKey) }
+    }
+    
+    init() {
+        let raw = UserDefaults.standard.string(forKey: Self.storageKey) ?? ""
+        language = Language(rawValue: raw) ?? .system
     }
 }
-

@@ -3,7 +3,7 @@ import Foundation
 struct L10n {
     enum Key: String {
         case title
-        case scan, edit, exportExcel
+        case scan, edit
         case deleteSelected, resetAllCards
         case deleteSelectedTitle, deleteSelectedMessage
         case resetAllTitle, resetAllMessage
@@ -28,26 +28,26 @@ struct L10n {
         case exportCSV
     }
     
+    /// Maps `.system` to the concrete language the device prefers.
+    static func resolve(_ lang: AppSettings.Language) -> AppSettings.Language {
+        if lang != .system { return lang }
+        let preferred = Locale.preferredLanguages.first ?? "en"
+        return preferred.hasPrefix("ja") ? .japanese : .english
+    }
+    
     static func t(_ key: Key, lang: AppSettings.Language) -> String {
-        let resolved: AppSettings.Language = {
-            if lang != .system { return lang }
-            let preferred = Locale.preferredLanguages.first ?? "en"
-            return preferred.hasPrefix("ja") ? .japanese : .english
-        }()
-        
-        switch resolved {
+        switch resolve(lang) {
         case .japanese:
             switch key {
             case .title: return "名刺スキャナー"
             case .scan: return "スキャン"
             case .edit: return "編集"
-            case .exportExcel: return "Excel出力"
             case .deleteSelected: return "選択を削除"
             case .resetAllCards: return "全削除"
             case .deleteSelectedTitle: return "選択した名刺を削除しますか？"
-            case .deleteSelectedMessage: return "この操作は元に戻せません。"
+            case .deleteSelectedMessage: return "削除後 6 秒以内なら「取り消す」で復元できます。"
             case .resetAllTitle: return "すべての名刺を削除しますか？"
-            case .resetAllMessage: return "この操作は元に戻せません。"
+            case .resetAllMessage: return "削除後 6 秒以内なら「取り消す」で復元できます。"
             case .deleteAction: return "削除"
             case .resetAction: return "全削除"
             case .undo: return "取り消す"
@@ -91,13 +91,12 @@ struct L10n {
             case .title: return "Business Card Scanner"
             case .scan: return "Scan"
             case .edit: return "Edit"
-            case .exportExcel: return "Export Excel"
             case .deleteSelected: return "Delete Selected"
             case .resetAllCards: return "Clear All"
             case .deleteSelectedTitle: return "Delete selected card?"
-            case .deleteSelectedMessage: return "This action cannot be undone."
+            case .deleteSelectedMessage: return "You can undo this for 6 seconds after deleting."
             case .resetAllTitle: return "Delete all cards?"
-            case .resetAllMessage: return "This action cannot be undone."
+            case .resetAllMessage: return "You can undo this for 6 seconds after deleting."
             case .deleteAction: return "Delete"
             case .resetAction: return "Delete All"
             case .undo: return "Undo"
