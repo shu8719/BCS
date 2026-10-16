@@ -2,6 +2,25 @@ import Foundation
 import CoreGraphics
 
 final class AddressParser {
+    // NSDataDetector creation is expensive and these are called for every OCR line
+    // from several parsers, so build them once. NSDataDetector is thread-safe.
+    private static let addressDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.address.rawValue)
+    private static let contactLineMatcher = KeywordMatcher([
+        "tel", "phone", "mobile", "cell", "fax", "facsimile", "e-mail", "email", "mail", "web", "website", "http", "www"
+    ])
+    private static let phoneWordMatcher = KeywordMatcher(["tel", "phone", "mobile", "cell", "office", "direct", "main"])
+    private static let addressSuffixMatcher = KeywordMatcher([
+        "street", "st", "road", "rd", "avenue", "ave", "drive", "dr", "suite", "floor", "building"
+    ])
+    private static let addressLabelKeywordMatcher = KeywordMatcher([
+        "address", "office address", "location", "head office", "addr"
+    ])
+    // A phone number with at most a bullet and/or a short label in front: "• 407.555.0162", "D 407-555.0173".
+    private static let barePhoneRegex = try? NSRegularExpression(
+        pattern: #"^(?:[•·\-–—*|]+\s*)?(?:(?:tel|phone|ph|mobile|cell|direct|office|main|fax|t|m|d|p|c|f)\.?\s*[:：\-]?\s*)?\+?[\d\s().\-]*\d[\d\s().\-]*(?:\s*(?:ext\.?|x|#)\s*\d{1,6})?$"#,
+        options: [.caseInsensitive]
+    )
+
     func pickAddressBlockInfo(from lines: [OCRLine]) -> (text: String, box: CGRect?) {
         guard !lines.isEmpty else { return ("", nil) }
         
@@ -203,6 +222,18 @@ final class AddressParser {
         return unique(addressLike.prefix(3).map { $0 }).joined(separator: " / ")
     }
     
+    /// True for lines that are just a phone number (optionally with a bullet or a short label).
+    /// Such lines otherwise pass the "contains a 4-6 digit run" address heuristic.
+    func isBarePhoneLine(_ line: String) -> Bool {
+        let t = normalizeSpace(line)
+        guard let re = Self.barePhoneRegex,
+              re.firstMatch(in: t, range: NSRange(location: 0, length: (t as NSString).length)) != nil else {
+            return false
+        }
+        let digitCount = t.filter(\.isNumber).count
+        return (7...15).contains(digitCount)
+    }
+    
     func looksLikeAddressLine(_ line: String) -> Bool {
         let t = normalizeSpace(line)
         let lower = t.lowercased()
@@ -210,6 +241,7 @@ final class AddressParser {
         if t.isEmpty { return false }
         if isAddressLabelOnly(t) { return false }
         if isPhoneContactLine(t) { return false }
+        if isBarePhoneLine(t) { return false }
         if isStandaloneContactLabel(t) { return false }
         if t.contains("@") || lower.contains("http") || lower.contains("www") { return false }
         if isContactLine(lower) { return false }
@@ -256,9 +288,7 @@ final class AddressParser {
     
     private func detectAddressFallback(from text: String) -> String {
         guard !text.isEmpty else { return "" }
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.address.rawValue) else {
-            return ""
-        }
+        guard let detector = Self.addressDetector else { return "" }
         let ns = text as NSString
         let range = NSRange(location: 0, length: ns.length)
         var best = ""
@@ -301,14 +331,11 @@ final class AddressParser {
     }
     
     private func isContactLine(_ lower: String) -> Bool {
-        let keys = ["tel", "phone", "mobile", "cell", "fax", "facsimile", "e-mail", "email", "mail", "web", "website", "http", "www"]
-        return keys.contains(where: { lower.contains($0) })
+        Self.contactLineMatcher.matches(lower)
     }
     
     private func matchesAddressDetector(_ text: String) -> Bool {
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.address.rawValue) else {
-            return false
-        }
+        guard let detector = Self.addressDetector else { return false }
         let ns = text as NSString
         let range = NSRange(location: 0, length: ns.length)
         var found = false
@@ -328,6 +355,7 @@ final class AddressParser {
         
         if t.isEmpty { return false }
         if isPhoneContactLine(t) { return false }
+        if isBarePhoneLine(t) { return false }
         if isStandaloneContactLabel(t) { return false }
         if t.contains("@") || lower.contains("http") || lower.contains("www") { return false }
         if isContactLine(lower) { return false }
@@ -355,8 +383,7 @@ final class AddressParser {
         
         if t.rangeOfCharacter(from: .decimalDigits) != nil || t.contains(",") { return true }
         
-        let suffixes = ["street", "st", "road", "rd", "avenue", "ave", "drive", "dr", "suite", "floor", "building"]
-        if suffixes.contains(where: { lower.contains($0) }) { return true }
+        if Self.addressSuffixMatcher.matches(lower) { return true }
         
         let tokens = t.split(separator: " ")
         if (1...3).contains(tokens.count) {
@@ -383,7 +410,7 @@ final class AddressParser {
     private func isPhoneContactLine(_ line: String) -> Bool {
         let t = normalizeSpace(line)
         let lower = t.lowercased()
-        let hasPhoneWord = ["tel", "phone", "mobile", "cell", "office", "direct", "main"].contains(where: { lower.contains($0) })
+        let hasPhoneWord = Self.phoneWordMatcher.matches(lower)
         let hasPhoneLikeDigits = t.range(of: #"(?:\+?\d[\d\-\s\(\)]{6,}\d)"#, options: .regularExpression) != nil
         return hasPhoneWord && hasPhoneLikeDigits
     }
@@ -397,9 +424,7 @@ final class AddressParser {
     }
     
     private func containsAddressLabelKeyword(_ s: String) -> Bool {
-        let t = normalizeSpace(s).lowercased()
-        let keys = ["address", "office address", "location", "head office", "addr"]
-        return keys.contains(where: { t.contains($0) })
+        Self.addressLabelKeywordMatcher.matches(normalizeSpace(s))
     }
     
     private func looksLikeStateZipLine(_ s: String) -> Bool {
@@ -423,6 +448,7 @@ final class AddressParser {
             let trimmed = normalizeSpace(seg)
             if trimmed.isEmpty { continue }
             if isPhoneNoteSegment(trimmed) { continue }
+            if isBarePhoneLine(trimmed) { continue }
             
             var cleaned = stripLeadingPhoneLabelTokens(trimmed)
             cleaned = stripPhoneNotePhrases(cleaned)

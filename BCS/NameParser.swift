@@ -309,8 +309,8 @@ final class NameParser {
         let blockedCommon = Set([
             "inc", "llc", "ltd", "corp", "company", "co", "gmbh", "kft", "ag", "sa", "group",
             "electronics", "assembly", "solutions", "systems", "manager", "director", "engineer",
-            "sales", "marketing", "office", "department", "division", "team", "future",
-            "service", "services", "technology", "technologies", "development", "project", "kuiper"
+            "sales", "marketing", "office", "department", "division", "team",
+            "service", "services", "technology", "technologies", "development", "project"
         ])
         let companyTokens = Set(
             normalizeKey(company)

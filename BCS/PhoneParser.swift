@@ -1,15 +1,35 @@
 import Foundation
 
 final class PhoneParser {
+    // Compiled once; NSRegularExpression / NSDataDetector are thread-safe.
+    private static let labelRegex = try? NSRegularExpression(
+        // Single-letter labels (T/M/D/P/F) may be followed by a colon or directly by the number
+        // ("D 407-555.0173"); the boundary keeps "of:" / "ip:" from being read as F: / P:.
+        pattern: #"(?i)(?:^|\b)(tel\.?|phone|ph\.?|mobile\.?|direct|fax|facsimile)(?=\b|[:：])|(?<![\p{L}\p{N}])[TMDPF](?=\s*[:：]|\s+\+?\(?\d)"#
+    )
+    // Separators are horizontal whitespace only, so a number never spans two OCR lines.
+    private static let numberRegexes: [NSRegularExpression] = [
+        #"\+?\d{1,3}[ \t\-.]?\(?\d{2,4}\)?[ \t\-.]?\d{2,4}[ \t\-.]?\d{3,4}(?:[ \t]*(?:ext\.?|x|#)[ \t]*\d{1,6})?"#,
+        #"0\d{1,4}[\-\t ]?\d{1,4}[\-\t ]?\d{3,4}(?:[ \t]*(?:ext\.?|x|#)[ \t]*\d{1,6})?"#
+    ].compactMap { try? NSRegularExpression(pattern: $0, options: [.caseInsensitive]) }
+    private static let phoneDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.phoneNumber.rawValue)
+    // "fax" / "facsimile" as whole words, or an "F:" label; "of:" and "Ref:" must not match.
+    private static let faxRegex = try? NSRegularExpression(
+        pattern: #"(?<![\p{L}\p{N}])(?:(?:fax|facsimile)(?![\p{L}\p{N}])|f[ \t]*:)"#,
+        options: [.caseInsensitive]
+    )
+
     struct DetectedPhone {
         let label: PhoneLabel
-        let labelText: String
+        let labelText: String   // normalized for display, e.g. "TEL", "D:"
+        let labelRaw: String    // as it appeared in the text, e.g. "Phone", "D"
         let number: String
     }
     
     private struct LabelMatch {
         let label: PhoneLabel
         let labelText: String
+        let raw: String
         let range: NSRange
         let isFax: Bool
     }
@@ -50,9 +70,9 @@ final class PhoneParser {
         var clean = address
         for item in detected {
             let num = NSRegularExpression.escapedPattern(for: item.number)
-            if !item.labelText.isEmpty {
-                let label = NSRegularExpression.escapedPattern(for: item.labelText)
-                let pattern = "\(label)\\s*[:：]?\\s*\(num)"
+            if !item.labelRaw.isEmpty {
+                let label = NSRegularExpression.escapedPattern(for: item.labelRaw)
+                let pattern = "(?<![\\p{L}\\p{N}])\(label)\\s*[:：]?\\s*\(num)"
                 clean = clean.replacingOccurrences(of: pattern, with: "", options: [.regularExpression, .caseInsensitive])
             }
             clean = clean.replacingOccurrences(of: num, with: "", options: [.regularExpression, .caseInsensitive])
@@ -67,12 +87,13 @@ final class PhoneParser {
             clean = clean.replacingOccurrences(of: pattern, with: "", options: [.regularExpression, .caseInsensitive])
         }
         
-        clean = clean
-            .replacingOccurrences(of: #"(\s*/\s*){2,}"#, with: " / ", options: .regularExpression)
-            .replacingOccurrences(of: #"\s*/\s*$"#, with: "", options: .regularExpression)
-            .replacingOccurrences(of: #"^\s*/\s*"#, with: "", options: .regularExpression)
-            .replacingOccurrences(of: #"\s{2,}"#, with: " ", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        // Drop segments left with nothing meaningful after the numbers were removed
+        // (orphaned labels such as "D" or bullets such as "•").
+        let segments = clean
+            .split(whereSeparator: { $0 == "/" })
+            .map { normalizeSpace(String($0)) }
+            .filter { seg in seg.filter { $0.isLetter || $0.isNumber }.count >= 2 }
+        clean = segments.joined(separator: " / ")
         
         return (clean, phones)
     }
@@ -120,6 +141,9 @@ final class PhoneParser {
         let maxDistance = allowMultiline ? 80 : 30
         
         var out: [DetectedPhone] = []
+        // A label applies only to the first number after it. Otherwise, in
+        // "Fax: 111\n222", the fax label would also swallow 222.
+        var previousNumberEnd = -1
         
         for num in sortedNumbers {
             let digits = phoneDigits(num.number)
@@ -127,25 +151,37 @@ final class PhoneParser {
             if looksLikePostalDigits(digits) { continue }
             if !isLikelyValidPhoneNumber(num.number) { continue }
             
-            if let label = sortedLabels.last(where: { $0.range.location < num.range.location }) {
+            let label = sortedLabels.last(where: {
+                $0.range.location < num.range.location && $0.range.location >= previousNumberEnd
+            })
+            previousNumberEnd = num.range.location + num.range.length
+            
+            if let label {
                 let distance = num.range.location - (label.range.location + label.range.length)
                 if distance <= maxDistance {
                     if label.isFax { continue }
-                    out.append(DetectedPhone(label: label.label, labelText: label.labelText, number: num.number))
+                    out.append(DetectedPhone(label: label.label, labelText: label.labelText, labelRaw: label.raw, number: num.number))
                     continue
                 }
             }
             
-            if containsFaxKeyword(normalized.lowercased()) { continue }
-            out.append(DetectedPhone(label: .unknown, labelText: "", number: num.number))
+            // Unlabeled number: treat it as a fax number only when the fax keyword is on
+            // the same line, not when it appears anywhere else on the card.
+            if containsFaxKeyword(lineContaining(num.range, in: normalized)) { continue }
+            out.append(DetectedPhone(label: .unknown, labelText: "", labelRaw: "", number: num.number))
         }
         
         return out
     }
     
+    private func lineContaining(_ range: NSRange, in text: String) -> String {
+        let ns = text as NSString
+        let lineRange = ns.lineRange(for: NSRange(location: range.location, length: 0))
+        return ns.substring(with: lineRange)
+    }
+    
     private func findLabelMatches(in text: String) -> [LabelMatch] {
-        let pattern = #"(?i)(?:^|\b)(tel\.?|phone|ph\.?|mobile\.?|direct|fax|facsimile)(?=\b|[:：])|[TMDP]:"#
-        guard let re = try? NSRegularExpression(pattern: pattern) else { return [] }
+        guard let re = Self.labelRegex else { return [] }
         
         let ns = text as NSString
         let range = NSRange(location: 0, length: ns.length)
@@ -155,25 +191,25 @@ final class PhoneParser {
             let raw = ns.substring(with: m.range)
             let key = raw.lowercased()
             
+            func add(_ label: PhoneLabel, _ text: String, isFax: Bool = false) {
+                matches.append(LabelMatch(label: label, labelText: text, raw: raw, range: m.range, isFax: isFax))
+            }
+            
             switch key {
-            case "tel", "tel.":
-                matches.append(LabelMatch(label: .main, labelText: "TEL", range: m.range, isFax: false))
-            case "phone", "ph", "ph.":
-                matches.append(LabelMatch(label: .main, labelText: "TEL", range: m.range, isFax: false))
+            case "tel", "tel.", "phone", "ph", "ph.":
+                add(.main, "TEL")
             case "mobile", "mobile.":
-                matches.append(LabelMatch(label: .mobile, labelText: "Mobile", range: m.range, isFax: false))
+                add(.mobile, "Mobile")
             case "direct":
-                matches.append(LabelMatch(label: .direct, labelText: "Direct", range: m.range, isFax: false))
-            case "t:":
-                matches.append(LabelMatch(label: .main, labelText: "T:", range: m.range, isFax: false))
-            case "m:":
-                matches.append(LabelMatch(label: .mobile, labelText: "M:", range: m.range, isFax: false))
-            case "d:":
-                matches.append(LabelMatch(label: .direct, labelText: "D:", range: m.range, isFax: false))
-            case "p:":
-                matches.append(LabelMatch(label: .main, labelText: "T:", range: m.range, isFax: false))
-            case "fax", "facsimile":
-                matches.append(LabelMatch(label: .unknown, labelText: "FAX", range: m.range, isFax: true))
+                add(.direct, "Direct")
+            case "t", "p":
+                add(.main, "T:")
+            case "m":
+                add(.mobile, "M:")
+            case "d":
+                add(.direct, "D:")
+            case "fax", "facsimile", "f":
+                add(.unknown, "FAX", isFax: true)
             default:
                 continue
             }
@@ -183,16 +219,10 @@ final class PhoneParser {
     }
     
     private func extractNumberMatches(from text: String) -> [(range: NSRange, number: String)] {
-        let patterns = [
-            #"\+?\d{1,3}[\s\-.]?\(?\d{2,4}\)?[\s\-.]?\d{2,4}[\s\-.]?\d{3,4}(?:\s*(?:ext\.?|x|#)\s*\d{1,6})?"#,
-            #"0\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}(?:\s*(?:ext\.?|x|#)\s*\d{1,6})?"#
-        ]
-        let regexes = patterns.compactMap { try? NSRegularExpression(pattern: $0, options: [.caseInsensitive]) }
-        
         let ns = text as NSString
         var out: [(NSRange, String)] = []
         
-        for re in regexes {
+        for re in Self.numberRegexes {
             let ms = re.matches(in: text, range: NSRange(location: 0, length: ns.length))
             for m in ms {
                 var raw = trimRawPhoneMatch(ns.substring(with: m.range))
@@ -204,7 +234,7 @@ final class PhoneParser {
             }
         }
         
-        if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.phoneNumber.rawValue) {
+        if let detector = Self.phoneDetector {
             detector.enumerateMatches(in: text, options: [], range: NSRange(location: 0, length: ns.length)) { m, _, _ in
                 guard let m else { return }
                 guard m.resultType == .phoneNumber else { return }
@@ -291,16 +321,14 @@ final class PhoneParser {
             .replacingOccurrences(of: "／", with: "/")
     }
     
-    private func containsFaxKeyword(_ lower: String) -> Bool {
-        let keys = ["fax", "facsimile", "fax:", "f:"]
-        return keys.contains(where: { lower.contains($0) })
+    private func containsFaxKeyword(_ text: String) -> Bool {
+        guard let re = Self.faxRegex else { return false }
+        return re.firstMatch(in: text, range: NSRange(location: 0, length: (text as NSString).length)) != nil
     }
     
     private func detectPhoneCandidates(_ text: String) -> [String] {
         guard !text.isEmpty else { return [] }
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.phoneNumber.rawValue) else {
-            return []
-        }
+        guard let detector = Self.phoneDetector else { return [] }
         
         let ns = text as NSString
         let range = NSRange(location: 0, length: ns.length)
