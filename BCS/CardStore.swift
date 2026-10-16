@@ -40,7 +40,10 @@ final class CardStore {
     // Returns a Binding suitable for EditCardView; saves and re-resolves timezone on each write.
     func binding(at index: Int) -> Binding<BusinessCard> {
         Binding(
-            get: { [weak self] in self?.cards[index] ?? BusinessCard() },
+            get: { [weak self] in
+                guard let self, self.cards.indices.contains(index) else { return BusinessCard() }
+                return self.cards[index]
+            },
             set: { [weak self] newValue in
                 guard let self, self.cards.indices.contains(index) else { return }
                 self.cards[index] = newValue
@@ -113,12 +116,17 @@ final class CardStore {
     }
 
     private struct PersistedState: Codable {
+        static let currentVersion = 1
+
+        // Optional so files written before versioning (no "version" key) still decode.
+        let version: Int?
         let cards: [BusinessCard]
         let selectedIndex: Int?
     }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(PersistedState(cards: cards, selectedIndex: selectedIndex)) else { return }
+        let state = PersistedState(version: PersistedState.currentVersion, cards: cards, selectedIndex: selectedIndex)
+        guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: jsonURL, options: .atomic)
     }
 
@@ -130,13 +138,37 @@ final class CardStore {
             UserDefaults.standard.removeObject(forKey: legacyStorageKey)
         }
 
-        guard let data = try? Data(contentsOf: jsonURL),
-              let state = try? JSONDecoder().decode(PersistedState.self, from: data) else { return }
-        cards = state.cards
-        if let idx = state.selectedIndex, cards.indices.contains(idx) {
-            selectedIndex = idx
-        } else {
-            selectedIndex = cards.isEmpty ? nil : 0
+        guard FileManager.default.fileExists(atPath: jsonURL.path) else { return }
+
+        do {
+            let data = try Data(contentsOf: jsonURL)
+            let state = try JSONDecoder().decode(PersistedState.self, from: data)
+            if let version = state.version, version > PersistedState.currentVersion {
+                throw CocoaError(.fileReadUnsupportedScheme,
+                                 userInfo: [NSLocalizedDescriptionKey: "state version \(version) is newer than supported \(PersistedState.currentVersion)"])
+            }
+            cards = state.cards
+            if let idx = state.selectedIndex, cards.indices.contains(idx) {
+                selectedIndex = idx
+            } else {
+                selectedIndex = cards.isEmpty ? nil : 0
+            }
+        } catch {
+            // Do not let a subsequent save() overwrite data we could not read:
+            // move the file aside so it survives, then start with an empty list.
+            setAsideUnreadableStateFile(reason: error)
+        }
+    }
+
+    private func setAsideUnreadableStateFile(reason: Error) {
+        let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        let backupURL = jsonURL.deletingLastPathComponent()
+            .appendingPathComponent("business_cards.unreadable-\(stamp).json")
+        do {
+            try FileManager.default.moveItem(at: jsonURL, to: backupURL)
+            print("CardStore: could not read saved cards (\(reason)); kept file as \(backupURL.lastPathComponent)")
+        } catch {
+            print("CardStore: could not read saved cards (\(reason)) and failed to set the file aside: \(error)")
         }
     }
 

@@ -33,6 +33,41 @@ struct LabeledNumber: Identifiable, Equatable, Codable {
     var number: String
 }
 
+// Tolerant decoding: fields added in later versions fall back to their defaults
+// instead of failing the whole decode (which would otherwise drop every stored card).
+// Declared in extensions so the synthesized memberwise / default initializers are kept.
+extension BusinessCard {
+    private enum CodingKeys: String, CodingKey {
+        case id, name, company, phones, email, address, timeZoneCode, timeZoneId, timeZoneSourceAddress
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id                    = try c.decodeIfPresent(UUID.self,            forKey: .id) ?? UUID()
+        name                  = try c.decodeIfPresent(String.self,          forKey: .name) ?? ""
+        company               = try c.decodeIfPresent(String.self,          forKey: .company) ?? ""
+        phones                = try c.decodeIfPresent([LabeledNumber].self, forKey: .phones) ?? []
+        email                 = try c.decodeIfPresent(String.self,          forKey: .email) ?? ""
+        address               = try c.decodeIfPresent(String.self,          forKey: .address) ?? ""
+        timeZoneCode          = try c.decodeIfPresent(String.self,          forKey: .timeZoneCode) ?? ""
+        timeZoneId            = try c.decodeIfPresent(String.self,          forKey: .timeZoneId) ?? ""
+        timeZoneSourceAddress = try c.decodeIfPresent(String.self,          forKey: .timeZoneSourceAddress) ?? ""
+    }
+}
+
+extension LabeledNumber {
+    private enum CodingKeys: String, CodingKey {
+        case id, label, number
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id     = try c.decodeIfPresent(UUID.self,       forKey: .id) ?? UUID()
+        label  = try c.decodeIfPresent(PhoneLabel.self, forKey: .label) ?? .unknown
+        number = try c.decodeIfPresent(String.self,     forKey: .number) ?? ""
+    }
+}
+
 fileprivate func parseCSVLine(_ line: String) -> [String] {
     var result: [String] = []
     var field = ""
@@ -63,13 +98,21 @@ fileprivate func parseCSVLine(_ line: String) -> [String] {
 }
 
 final class ZipTimeZoneDB {
-    static let shared = ZipTimeZoneDB()
+    static let shared = ZipTimeZoneDB(fileURL: Bundle.main.url(forResource: "uszips", withExtension: "csv"))
     
+    /// False when the CSV is not in the main bundle (e.g. parser tests run outside the app).
+    static var isAvailable: Bool {
+        Bundle.main.url(forResource: "uszips", withExtension: "csv") != nil
+    }
+    
+    private let fileURL: URL?
     private let queue = DispatchQueue(label: "ZipTimeZoneDB")
     private var map: [String: String] = [:]
     private var loaded = false
     
-    private init() {}
+    init(fileURL: URL?) {
+        self.fileURL = fileURL
+    }
     
     func preload() {
         queue.async { [weak self] in
@@ -84,12 +127,20 @@ final class ZipTimeZoneDB {
         }
     }
     
+    var entryCount: Int {
+        queue.sync {
+            loadIfNeeded()
+            return map.count
+        }
+    }
+    
     private func loadIfNeeded() {
         guard !loaded else { return }
         loaded = true
         
-        guard let url = Bundle.main.url(forResource: "uszips", withExtension: "csv"),
+        guard let url = fileURL,
               let contents = try? String(contentsOf: url, encoding: .utf8) else {
+            print("ZipTimeZoneDB: could not load uszips.csv")
             return
         }
         
@@ -118,13 +169,16 @@ final class ZipTimeZoneDB {
 }
 
 final class AreaCodeTimeZoneDB {
-    static let shared = AreaCodeTimeZoneDB()
+    static let shared = AreaCodeTimeZoneDB(fileURL: Bundle.main.url(forResource: "ac-tz", withExtension: "csv"))
     
+    private let fileURL: URL?
     private let queue = DispatchQueue(label: "AreaCodeTimeZoneDB")
     private var map: [String: String] = [:]
     private var loaded = false
     
-    private init() {}
+    init(fileURL: URL?) {
+        self.fileURL = fileURL
+    }
     
     func preload() {
         queue.async { [weak self] in
@@ -139,12 +193,20 @@ final class AreaCodeTimeZoneDB {
         }
     }
     
+    var entryCount: Int {
+        queue.sync {
+            loadIfNeeded()
+            return map.count
+        }
+    }
+    
     private func loadIfNeeded() {
         guard !loaded else { return }
         loaded = true
         
-        guard let url = Bundle.main.url(forResource: "ac-tz", withExtension: "csv"),
+        guard let url = fileURL,
               let contents = try? String(contentsOf: url, encoding: .utf8) else {
+            print("AreaCodeTimeZoneDB: could not load ac-tz.csv")
             return
         }
         
