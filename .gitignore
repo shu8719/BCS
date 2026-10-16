@@ -19,3 +19,9 @@ DerivedData/
 
 # CocoaPods
 Pods/
+
+# IDE
+.vscode/
+
+# Exported card data (contains real contacts)
+/business_cards_*.csv

@@ -48,12 +48,16 @@ OCR と、独自のパーサーパイプラインを組み合わせることで�
 BCSApp
 └── RootView (TabView)
     ├── ContentView          # カード一覧・操作 UI
-    │   ├── ScannerView      # カメラ → OCR → パース起動
-    │   └── EditCardView     # 手動編集
-    └── SettingsView         # 言語設定
+    │   ├── ScannerView      # カメラ → TextRecognizer → CardParser
+    │   └── EditCardView     # 手動編集（Save 時のみ保存）
+    └── SettingsView         # 言語設定（DEBUG ビルドでは開発用ツールも表示）
 
-パーサーパイプライン（ScannerView.Coordinator 内）
+OCR
+  TextRecognizer       Vision の VNRecognizeTextRequest をラップ（カメラ・写真読み込みで共用）
+
+パーサーパイプライン（CardParser）
   OCR テキスト群
+    → 行の再構築      Y 座標でグループ化し、列ギャップで分割
     → AddressParser    住所ブロック検出・マルチライン結合
     → PhoneParser      電話番号抽出・ラベル付与・重複除去
     → NameParser       スコアリングによる人名候補選定
@@ -102,7 +106,11 @@ BCS/
 ├── ContentView.swift       カード一覧・Undo・エクスポート
 ├── EditCardView.swift      カード手動編集
 ├── SettingsView.swift      言語設定
-├── ScannerView.swift       OCR + パーサー起動
+├── ScannerView.swift       カメラ（VNDocumentCameraViewController）
+├── TextRecognizer.swift    Vision OCR ラッパー
+├── CardParser.swift        OCR 断片 → BusinessCard（パイプライン本体）
+├── CardFixture.swift       テスト用フィクスチャの JSON モデル
+├── FixtureRecorder.swift   直近の OCR 結果を保持（DEBUG のみ）
 ├── AddressParser.swift     住所ブロック検出・結合
 ├── PhoneParser.swift       電話番号抽出・ラベル付与
 ├── NameParser.swift        人名スコアリング
@@ -115,7 +123,45 @@ BCS/
 ├── ShareSheet.swift        UIActivityViewController ラッパー
 ├── uszips.csv              米国郵便番号 → タイムゾーン DB
 └── ac-tz.csv               米国市外局番 → タイムゾーン DB
+BCSTests/
+├── Fixtures/                 名刺ごとの OCR 結果 + 期待値（JSON）
+├── FixtureAccuracyTests.swift 全フィクスチャの項目別正解率
+├── FixtureEvaluator.swift    正解率の集計と正規化ルール
+├── CardParserTests.swift     パイプライン全体
+├── ParserUtilsTests.swift    キーワード判定（単語境界）
+├── PhoneParserTests.swift    電話番号抽出・FAX 除外・重複除去
+├── AddressParserTests.swift  住所行判定・複数行結合
+├── NameParserTests.swift     人名選定
+└── TimeZoneResolverTests.swift タイムゾーン更新・クリア
 ```
+
+---
+
+## 精度の検証（フィクスチャ）
+
+パーサーの精度は、本物の名刺の OCR 結果を保存したフィクスチャで測ります。名刺画像は保存せず、
+Vision が返したテキストと座標、および期待値だけを JSON にします。
+
+1. DEBUG ビルドで設定タブを開き、「開発用」セクションを使う
+   - **写真から OCR してパース**: 写真ライブラリの画像をカメラを通さずに OCR する（再現性が高い）
+   - **直近のスキャンをフィクスチャとして書き出す**: カメラまたは写真から直近に処理した結果を JSON にして共有シートへ（AirDrop で Mac に送る）
+2. 受け取った JSON を `BCSTests/Fixtures/` に置く
+3. `expected` にはパーサーの現在の出力が入っているので、間違っている項目だけ正しい値に直す
+   - 項目を削除すると、その項目はチェック対象外になる
+   - `phones` は数字だけを比較、`address` は英数字だけを比較するので表記ゆれは無視される
+4. Xcode で Cmd+U。`FixtureAccuracyTests` が全フィクスチャを流し、ログに項目別の正解率を出す
+
+```
+Fixture accuracy (20 fixtures)
+  name      17/20   85.0%
+  company   15/20   75.0%
+  ...
+Failures:
+  [paper_acme_20261016_173000] name: expected "John Smith" / actual "Sales Manager"
+```
+
+`FixtureAccuracyTests.minimumAccuracy` の下限値は最初 0 になっています。フィクスチャが 20 枚程度そろったら
+基準値を設定し、以降の改修で下回ったらテストが失敗するようにしてください。
 
 ---
 
@@ -138,5 +184,5 @@ Xcode でスキームを選択し、実機または Simulator でビルドして
 
 - [ ] OCR 言語設定の追加（日本語名刺対応）
 - [ ] ダークモード対応
-- [ ] パーサーのユニットテスト追加
+- [x] パーサーのユニットテスト追加（`BCSTests`）
 - [ ] SwiftData への移行
