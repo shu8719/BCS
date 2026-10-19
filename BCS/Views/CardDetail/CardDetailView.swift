@@ -37,8 +37,9 @@ struct CardDetailView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $editDraft) { draft in
-            EditCardView(card: Binding(get: { editDraft ?? draft }, set: { editDraft = $0 }),
-                         onSave: { store.update($0) })
+            CardEditView(card: draft,
+                         onSave: { store.update($0) },
+                         onDelete: { store.delete(id: cardID); dismiss() })
         }
         .confirmationDialog(L10n.t(.deleteThisCard, lang: lang), isPresented: $confirmDelete, titleVisibility: .visible) {
             Button(L10n.t(.deleteAction, lang: lang), role: .destructive) {

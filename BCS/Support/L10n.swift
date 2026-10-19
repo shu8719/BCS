@@ -46,6 +46,10 @@ struct L10n {
         case actionCall, actionMail, actionMap
         case phoneDirect, phoneMain, phoneMobile, phoneGeneric
         case localTimeLine, scannedOn, tzFromZip, tzFromAreaCode, tzManual, deleteThisCard
+
+        // Card edit (04)
+        case editCardTitle, phoneN, phoneWithLabel
+        case tzAuto, tzUnknown, tzNameEST, tzNameCST, tzNameMST, tzNamePST, tzBasisZip, tzBasisAreaCode
     }
 
     /// Formats a key that contains %d / %@ placeholders.
@@ -158,6 +162,18 @@ struct L10n {
             case .tzFromAreaCode: return "市外局番 %@ からタイムゾーンを自動判定"
             case .tzManual: return "タイムゾーンは手動設定"
             case .deleteThisCard: return "この名刺を削除"
+
+            case .editCardTitle: return "名刺を編集"
+            case .phoneN: return "電話 %d"
+            case .phoneWithLabel: return "電話（%@）"
+            case .tzAuto: return "タイムゾーン（自動判定）"
+            case .tzUnknown: return "未判定"
+            case .tzNameEST: return "東部標準時"
+            case .tzNameCST: return "中部標準時"
+            case .tzNameMST: return "山岳部標準時"
+            case .tzNamePST: return "太平洋標準時"
+            case .tzBasisZip: return "郵便番号 %@ から判定"
+            case .tzBasisAreaCode: return "市外局番 %@ から判定"
             }
             
         case .english, .system:
@@ -256,6 +272,18 @@ struct L10n {
             case .tzFromAreaCode: return "Time zone from area code %@"
             case .tzManual: return "Time zone set manually"
             case .deleteThisCard: return "Delete this card"
+
+            case .editCardTitle: return "Edit card"
+            case .phoneN: return "Phone %d"
+            case .phoneWithLabel: return "Phone (%@)"
+            case .tzAuto: return "Time zone (auto)"
+            case .tzUnknown: return "Unknown"
+            case .tzNameEST: return "Eastern Time"
+            case .tzNameCST: return "Central Time"
+            case .tzNameMST: return "Mountain Time"
+            case .tzNamePST: return "Pacific Time"
+            case .tzBasisZip: return "From ZIP %@"
+            case .tzBasisAreaCode: return "From area code %@"
             }
         }
     }
