@@ -77,6 +77,6 @@
     }
   ],
   "name": "image_northwind_20261016_182800",
-  "notes": "Public sample image. Two-column layout: name/title on the left, phones/email/address on the right. Logo 'NORTHWIND' and 'TEST SYSTEMS' are separate OCR fragments.",
+  "notes": "Anonymized: OCR layout (boxes) from a real card, every string replaced with fictional values. Two-column layout: name/title on the left, phones/email/address on the right. Logo 'NORTHWIND' and 'TEST SYSTEMS' are separate OCR fragments.",
   "source": "image"
 }

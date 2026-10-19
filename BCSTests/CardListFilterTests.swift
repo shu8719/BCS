@@ -28,7 +28,7 @@ final class CardListFilterTests: XCTestCase {
         let a = card("David Morgan", company: "Northwind", address: "Orlando")
         let b = card("Linda Chen", company: "Amazon", email: "lindachen@amazon.com")
         var q = CardListQuery()
-        q.search = "  astro "
+        q.search = "  north "
         XCTAssertEqual(CardListFilter.apply(q, to: [a, b]).map(\.id), [a.id])
         q.search = "LINDACHEN"
         XCTAssertEqual(CardListFilter.apply(q, to: [a, b]).map(\.id), [b.id])

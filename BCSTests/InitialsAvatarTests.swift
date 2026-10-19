@@ -3,13 +3,13 @@ import XCTest
 
 final class InitialsAvatarTests: XCTestCase {
     func testInitialsFromTwoWords() {
-        XCTAssertEqual(InitialsAvatar.initials(of: "DAVID MORGAN"), "RD")
-        XCTAssertEqual(InitialsAvatar.initials(of: "Mark Ellis"), "LN")
-        XCTAssertEqual(InitialsAvatar.initials(of: "  Linda   Chen "), "XW")
+        XCTAssertEqual(InitialsAvatar.initials(of: "DAVID MORGAN"), "DM")
+        XCTAssertEqual(InitialsAvatar.initials(of: "Mark Ellis"), "ME")
+        XCTAssertEqual(InitialsAvatar.initials(of: "  Linda   Chen "), "LC")
     }
 
     func testInitialsFromSingleWord() {
-        XCTAssertEqual(InitialsAvatar.initials(of: "Northwind"), "AS")
+        XCTAssertEqual(InitialsAvatar.initials(of: "Northwind"), "NO")
         XCTAssertEqual(InitialsAvatar.initials(of: "山田太郎"), "山田")
     }
 
@@ -20,9 +20,9 @@ final class InitialsAvatarTests: XCTestCase {
 
     func testToneIsStableAndRotatesPrimaryTertiarySecondary() {
         // Unicode scalar sum mod 3 → [primary, tertiary, secondary]
-        XCTAssertEqual(AvatarTone.tone(for: "Mark Ellis"), .tertiary)     // sum % 3 == 1
-        XCTAssertEqual(AvatarTone.tone(for: "DAVID MORGAN"), .secondary)   // sum % 3 == 2
-        XCTAssertEqual(AvatarTone.tone(for: "Linda Chen"), .secondary)     // sum % 3 == 2
+        XCTAssertEqual(AvatarTone.tone(for: "DAVID MORGAN"), .tertiary)   // sum % 3 == 1
+        XCTAssertEqual(AvatarTone.tone(for: "Mark Ellis"), .secondary)    // sum % 3 == 2
+        XCTAssertEqual(AvatarTone.tone(for: "Linda Chen"), .secondary)    // sum % 3 == 2
         XCTAssertEqual(AvatarTone.tone(for: ""), .primary)                  // sum % 3 == 0
         XCTAssertEqual(AvatarTone.tone(for: "Mark Ellis"), AvatarTone.tone(for: "Mark Ellis"))
     }

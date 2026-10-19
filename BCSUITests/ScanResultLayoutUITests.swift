@@ -58,8 +58,9 @@ final class ScanResultLayoutUITests: XCTestCase {
         XCTAssertGreaterThan(second, 50, "second result: top bar is under the status bar")
     }
 
-    /// Same report via 写真から選ぶ: load a complete card, save, then load a card without a company.
-    /// Needs the two sample cards in the simulator's photo library (added with `xcrun simctl addmedia`).
+    /// Same report via 写真から選ぶ: load one card, save it, then load another.
+    /// Needs at least two photos taken this year in the simulator's library, e.g. the cards in `sample/`
+    /// (`xcrun simctl addmedia booted sample/tarou_yamada_card.png sample/hanako_sato_card.png`).
     func testSecondPhotoScanAfterSavingKeepsTopBarBelowStatusBar() throws {
         continueAfterFailure = true
         let app = XCUIApplication()
@@ -86,24 +87,14 @@ final class ScanResultLayoutUITests: XCTestCase {
             return y
         }
 
-        var completeIndex = 0
-        var first = pickPhoto(0, "photo_1_first")
-        if app.staticTexts["HANAKO SATO"].exists {          // picked the other card first; start over
-            app.buttons["icon-close"].firstMatch.tap()
-            XCTAssertTrue(title.waitForNonExistence(timeout: 10))
-            completeIndex = 1
-            first = pickPhoto(1, "photo_1_first")
-        }
-        XCTAssertTrue(app.staticTexts["DAVID MORGAN"].exists)
-
+        let first = pickPhoto(0, "photo_1_first")
         let save = app.buttons.matching(NSPredicate(format: "label CONTAINS '保存する'")).firstMatch
         XCTAssertTrue(save.waitForExistence(timeout: 5))
         save.tap()
         XCTAssertTrue(title.waitForNonExistence(timeout: 10))
         sleep(1)
 
-        let second = pickPhoto(1 - completeIndex, "photo_2_second")
-        XCTAssertTrue(app.staticTexts["HANAKO SATO"].exists)
+        let second = pickPhoto(1, "photo_2_second")
         XCTAssertGreaterThan(first, 50, "first result: top bar is under the status bar")
         XCTAssertEqual(second, first, accuracy: 1, "second result: top bar moved")
         XCTAssertGreaterThan(second, 50, "second result: top bar is under the status bar")

@@ -34,7 +34,7 @@ struct InitialsAvatar: View {
     var size: CGFloat = 32
     var showsReviewBadge: Bool = false
     
-    /// "DAVID MORGAN" → "RD", "Northwind" → "AS", "" → "?"
+    /// "DAVID MORGAN" → "DM", "Northwind" → "NO", "" → "?"
     static func initials(of name: String) -> String {
         let words = name.split(whereSeparator: { $0.isWhitespace }).map(String.init)
         guard let first = words.first else { return "?" }
