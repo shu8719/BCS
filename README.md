@@ -5,7 +5,7 @@ iPhone で名刺を撮るだけで、氏名・会社・電話・メール・住�
 - **言語 / UI**: Swift 5 / SwiftUI（iOS 17+）
 - **OCR**: Vision（`VNRecognizeTextRequest`）+ VisionKit の書類カメラ
 - **デザイン**: Material 3 ベース。Figma で設計し、Figma MCP 経由でトークンとアイコンを取り込み
-- **テスト**: XCTest 105 件 + 実名刺の OCR 結果を使った精度評価
+- **テスト**: XCTest 122 件 + UI テスト 4 件 + 実名刺の OCR 結果を使った精度評価
 
 ---
 
@@ -21,7 +21,7 @@ iPhone で名刺を撮るだけで、氏名・会社・電話・メール・住�
 
 ## 画面
 
-> 画像は Figma の設計データです。実機のスクリーンショットに順次差し替えます。
+> シミュレータ（iPhone 17）で、架空のサンプル名刺 2 枚を「写真から選ぶ」で読み込んで撮影しました。撮影は UI テスト（`ReadmeScreenshotTour`）で自動化しています。
 
 | 一覧 | スキャンメニュー | 複数選択 |
 |:--:|:--:|:--:|
@@ -31,7 +31,7 @@ iPhone で名刺を撮るだけで、氏名・会社・電話・メール・住�
 | 詳細 | 編集 | 読み取り結果 | 設定 |
 |:--:|:--:|:--:|:--:|
 | <img src="docs/screens/03_detail.png" width="180"> | <img src="docs/screens/04_edit.png" width="180"> | <img src="docs/screens/06_scan_result.png" width="180"> | <img src="docs/screens/07_settings.png" width="180"> |
-| 要確認バナー、電話 / メール / 地図へのクイックアクション、読み取り元の表示 | Outlined フィールドと自動判定したタイムゾーンの根拠 | スキャン直後の確認画面。保存するまで永続化しない | 言語切替、CSV 一括出力、全削除 |
+| 現地時刻と日本との時差、電話 / メール / 地図へのクイックアクション、項目のコピー。要確認の項目があればバナーと読み取り元を表示 | Outlined フィールドと自動判定したタイムゾーンの根拠 | スキャン直後の確認画面。保存するまで永続化しない | 言語切替、CSV 一括出力、全削除（DEBUG ビルドでは精度評価用の書き出しも） |
 
 ---
 
@@ -133,6 +133,7 @@ BCS/
 BCSTests/
 ├── Fixtures/       実名刺の OCR 結果 + 期待値
 └── *Tests.swift    パーサー・モデル・ストア・一覧ロジック・文言・スキャン導線
+BCSUITests/         結果画面のレイアウト回帰テスト、README 用スクリーンショット撮影
 docs/
 ├── screens/        画面画像
 └── superpowers/    設計書と実装計画
