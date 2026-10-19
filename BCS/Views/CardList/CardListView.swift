@@ -86,7 +86,7 @@ struct CardListView: View {
             }
             .animation(.easeInOut(duration: 0.2), value: store.undoState != nil)
             .navigationDestination(for: UUID.self) { id in
-                CardDetailPlaceholder(cardID: id)
+                CardDetailView(cardID: id)
             }
             .confirmationDialog(L10n.t(.sortTitle, lang: lang), isPresented: $showSortDialog, titleVisibility: .visible) {
                 Button(L10n.t(.sortNewest, lang: lang)) { query.sort = .scannedAtDesc }
@@ -331,19 +331,5 @@ struct CardListView: View {
         case .deleteMany(let count): return L10n.t(.undoDeletedManyMessage, lang: lang, count)
         case .deleteAll:             return L10n.t(.undoResetMessage, lang: lang)
         }
-    }
-}
-
-/// Stand-in until the detail screen task; shows the old summary card.
-private struct CardDetailPlaceholder: View {
-    @Environment(CardStore.self) private var store
-    let cardID: UUID
-    
-    var body: some View {
-        ScrollView {
-            CardSummaryView(card: store.card(id: cardID) ?? BusinessCard())
-                .padding(16)
-        }
-        .background(M3.surfaceContainerLow)
     }
 }

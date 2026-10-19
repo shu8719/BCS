@@ -38,6 +38,14 @@ struct L10n {
 
         // Selection mode (02)
         case selectedCount, tapToToggle, selectAll, exportSelectedCSV, undoDeletedManyMessage, deleteCountTitle
+
+        // Card detail (03)
+        case contactInfo, reviewItemsTitle, markReviewed, reviewSuffix
+        case reviewNoteNormalized, reviewNoteMissing, reviewNoteTZConflict
+        case reviewSubtitleNormalized, reviewSubtitleMissing
+        case actionCall, actionMail, actionMap
+        case phoneDirect, phoneMain, phoneMobile, phoneGeneric
+        case localTimeLine, scannedOn, tzFromZip, tzFromAreaCode, tzManual, deleteThisCard
     }
 
     /// Formats a key that contains %d / %@ placeholders.
@@ -127,6 +135,29 @@ struct L10n {
             case .exportSelectedCSV: return "CSVで書き出す"
             case .undoDeletedManyMessage: return "%d 件を削除しました"
             case .deleteCountTitle: return "%d 件を削除しますか？"
+
+            case .contactInfo: return "連絡先情報"
+            case .reviewItemsTitle: return "要確認の項目が %d 件あります"
+            case .markReviewed: return "確認済みに"
+            case .reviewSuffix: return " ・ 要確認"
+            case .reviewNoteNormalized: return "読み取り元: %@ → 補正済み"
+            case .reviewNoteMissing: return "読み取れませんでした"
+            case .reviewNoteTZConflict: return "郵便番号と市外局番の判定が異なります"
+            case .reviewSubtitleNormalized: return "読み取り時に書式を補正しました"
+            case .reviewSubtitleMissing: return "読み取れなかった項目があります"
+            case .actionCall: return "電話"
+            case .actionMail: return "メール"
+            case .actionMap: return "地図"
+            case .phoneDirect: return "直通"
+            case .phoneMain: return "代表"
+            case .phoneMobile: return "携帯"
+            case .phoneGeneric: return "電話"
+            case .localTimeLine: return "現地時刻 %@ ・ 日本との時差 %@時間"
+            case .scannedOn: return "%@ にスキャン"
+            case .tzFromZip: return "郵便番号 %@ からタイムゾーンを自動判定"
+            case .tzFromAreaCode: return "市外局番 %@ からタイムゾーンを自動判定"
+            case .tzManual: return "タイムゾーンは手動設定"
+            case .deleteThisCard: return "この名刺を削除"
             }
             
         case .english, .system:
@@ -202,6 +233,29 @@ struct L10n {
             case .exportSelectedCSV: return "Export CSV"
             case .undoDeletedManyMessage: return "%d cards deleted"
             case .deleteCountTitle: return "Delete %d cards?"
+
+            case .contactInfo: return "Contact info"
+            case .reviewItemsTitle: return "%d items need review"
+            case .markReviewed: return "Mark reviewed"
+            case .reviewSuffix: return " · Needs review"
+            case .reviewNoteNormalized: return "Read as: %@ → normalized"
+            case .reviewNoteMissing: return "Could not be read"
+            case .reviewNoteTZConflict: return "ZIP and area code disagree"
+            case .reviewSubtitleNormalized: return "Formatting was corrected on scan"
+            case .reviewSubtitleMissing: return "Some fields could not be read"
+            case .actionCall: return "Call"
+            case .actionMail: return "Email"
+            case .actionMap: return "Map"
+            case .phoneDirect: return "Direct"
+            case .phoneMain: return "Main"
+            case .phoneMobile: return "Mobile"
+            case .phoneGeneric: return "Phone"
+            case .localTimeLine: return "Local %@ · %@h from Japan"
+            case .scannedOn: return "Scanned %@"
+            case .tzFromZip: return "Time zone from ZIP %@"
+            case .tzFromAreaCode: return "Time zone from area code %@"
+            case .tzManual: return "Time zone set manually"
+            case .deleteThisCard: return "Delete this card"
             }
         }
     }
