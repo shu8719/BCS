@@ -52,6 +52,7 @@ final class CardParser {
         result.phones = phones
         result.email = ContactField(email)
         result.address = ContactField(address)
+        ReviewFlagger.apply(to: &result)
         return result
     }
     

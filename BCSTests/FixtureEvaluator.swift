@@ -96,9 +96,16 @@ struct FixtureEvaluator {
         s.lowercased().filter { $0.isLetter || $0.isNumber }
     }
     
-    /// "TEL: (408) 555-1234 / 650-555-0000" -> "4085551234|6505550000" (sorted set of digit strings)
+    /// "TEL: (408) 555-1234 / +1 650-555-0000" -> "4085551234|6505550000"
+    /// (sorted set of digit strings; a leading US country code 1 is dropped so
+    /// fixtures written before normalization still match).
     nonisolated private static func phoneDigitSet(_ s: String) -> String {
-        Set(s.split(separator: "/").map { $0.filter(\.isNumber) }.filter { !$0.isEmpty })
+        Set(s.split(separator: "/")
+            .map { piece -> String in
+                let digits = piece.filter(\.isNumber)
+                return (digits.count == 11 && digits.hasPrefix("1")) ? String(digits.dropFirst()) : digits
+            }
+            .filter { !$0.isEmpty })
             .sorted()
             .joined(separator: "|")
     }
