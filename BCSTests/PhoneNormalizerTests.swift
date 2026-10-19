@@ -20,6 +20,13 @@ final class PhoneNormalizerTests: XCTestCase {
         XCTAssertNil(PhoneNormalizer.normalizeUS("+44 20 7946 0958"))  // 12 digits
     }
 
+    func testDialableDropsExtensionAndLabels() {
+        XCTAssertEqual(PhoneNormalizer.dialable("408-555-1234 x 102"), "4085551234")
+        XCTAssertEqual(PhoneNormalizer.dialable("TEL: 408-555-1234 ext. 5"), "4085551234")
+        XCTAssertEqual(PhoneNormalizer.dialable("+1 407-555-0173"), "+14075550173")
+        XCTAssertEqual(PhoneNormalizer.dialable(""), "")
+    }
+
     func testAlreadyNormalizedIsIdempotent() {
         XCTAssertEqual(PhoneNormalizer.normalizeUS("+1 407-555-0173"), "+1 407-555-0173")
     }

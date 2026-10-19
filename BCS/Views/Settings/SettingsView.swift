@@ -50,6 +50,12 @@ struct SettingsView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            if let state = store.undoState {
+                UndoBar(operation: state.operation) { store.restoreUndo() }
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: store.undoState != nil)
         .sheet(item: $exportItem) { item in
             ShareSheet(items: [item.url])
                 .onDisappear { try? FileManager.default.removeItem(at: item.url) }
@@ -93,11 +99,12 @@ struct SettingsView: View {
                         .textStyle(.bodyLarge)
                         .foregroundStyle(M3.onSurface)
                 }
+                // Short, language-independent labels so three equal-width segments never truncate.
                 SegmentedButton(
                     options: [
-                        (AppSettings.Language.system, L10n.t(.system, lang: lang)),
-                        (AppSettings.Language.japanese, L10n.t(.japanese, lang: lang)),
-                        (AppSettings.Language.english, L10n.t(.english, lang: lang)),
+                        (AppSettings.Language.system, L10n.t(.langAuto, lang: lang)),
+                        (AppSettings.Language.japanese, "日本語"),
+                        (AppSettings.Language.english, "English"),
                     ],
                     selection: $settings.language
                 )

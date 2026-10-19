@@ -56,7 +56,9 @@ struct CardListView: View {
             .toolbar(.hidden, for: .navigationBar)
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 0) {
-                    if store.undoState != nil { undoBar }
+                    if let state = store.undoState {
+                        UndoBar(operation: state.operation) { store.restoreUndo() }
+                    }
                     if isSelecting { selectionBottomBar }
                 }
             }
@@ -275,30 +277,4 @@ struct CardListView: View {
             )
     }
     
-    // MARK: - Undo
-    
-    private var undoBar: some View {
-        HStack(spacing: 12) {
-            if let state = store.undoState {
-                Text(undoMessage(for: state.operation))
-                    .textStyle(.bodySmall)
-                    .foregroundStyle(M3.onSurfaceVariant)
-                Spacer()
-                BCSButton(L10n.t(.undo, lang: lang), style: .tonal) { store.restoreUndo() }
-            }
-        }
-        .padding(12)
-        .background(M3.surfaceContainerLowest)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
-    }
-    
-    private func undoMessage(for operation: CardStore.UndoOperation) -> String {
-        switch operation {
-        case .deleteSingle:          return L10n.t(.undoDeletedMessage, lang: lang)
-        case .deleteMany(let count): return L10n.t(.undoDeletedManyMessage, lang: lang, count)
-        case .deleteAll:             return L10n.t(.undoResetMessage, lang: lang)
-        }
-    }
 }

@@ -45,7 +45,8 @@ struct ScanFlowPresentation: ViewModifier {
                 }
             }
             .fullScreenCover(isPresented: Binding(get: { flow.isShowingResult },
-                                                  set: { if !$0, flow.isShowingResult { flow.cancel() } })) {
+                                                  set: { if !$0, flow.isShowingResult { flow.cancel() } }),
+                             onDismiss: { flow.resumeCameraAfterRetake() }) {
                 if let card = flow.resultCard {
                     ScanResultView(
                         card: card,

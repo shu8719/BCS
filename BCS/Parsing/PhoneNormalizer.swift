@@ -8,6 +8,18 @@ enum PhoneNormalizer {
     
     /// Returns the normalized form, or nil when the number is not a plain 10-digit US number
     /// (11 digits with a leading 1 are accepted). Numbers with an extension are never touched.
+    /// Digits to dial (with a leading "+" when present), cut before any extension marker:
+    /// "408-555-1234 x 102" → "4085551234", "+1 407-555-0173" → "+14075550173".
+    static func dialable(_ raw: String) -> String {
+        var head = raw
+        if let re = extensionRegex,
+           let m = re.firstMatch(in: raw, range: NSRange(location: 0, length: (raw as NSString).length)) {
+            head = (raw as NSString).substring(to: m.range.location)
+        }
+        let digits = head.filter(\.isNumber)
+        return (head.contains("+") && !digits.isEmpty ? "+" : "") + digits
+    }
+    
     static func normalizeUS(_ raw: String) -> String? {
         if let re = extensionRegex,
            re.firstMatch(in: raw, range: NSRange(location: 0, length: (raw as NSString).length)) != nil {

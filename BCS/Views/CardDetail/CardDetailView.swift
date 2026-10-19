@@ -115,7 +115,7 @@ struct CardDetailView: View {
     }
     
     private func quickActions(_ card: BusinessCard) -> some View {
-        let phone = card.phones.first?.number.filter { $0.isNumber || $0 == "+" } ?? ""
+        let phone = card.phones.first.map { PhoneNormalizer.dialable($0.number) } ?? ""
         let email = card.email.value
         let address = card.address.value
         return HStack(spacing: 8) {

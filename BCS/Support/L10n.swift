@@ -2,8 +2,7 @@ import Foundation
 
 struct L10n {
     enum Key: String {
-        case title
-        case scan, edit
+        case scan
 
         case resetAllTitle, resetAllMessage
         case deleteAction, resetAction
@@ -54,7 +53,7 @@ struct L10n {
         case retake, saveCard, scanWithCamera, scanFromPhoto, tzFromZipShort, tzFromAreaCodeShort
 
         // Settings (07)
-        case sectionDisplay, sectionData, sectionDeveloper, exportCSVTitle, cardsCount, deleteAllCards
+        case sectionDisplay, sectionData, sectionDeveloper, exportCSVTitle, cardsCount, deleteAllCards, langAuto
     }
 
     /// Formats a key that contains %d / %@ placeholders.
@@ -73,9 +72,7 @@ struct L10n {
         switch resolve(lang) {
         case .japanese:
             switch key {
-            case .title: return "名刺スキャナー"
             case .scan: return "スキャン"
-            case .edit: return "編集"
             case .resetAllTitle: return "すべての名刺を削除しますか？"
             case .resetAllMessage: return "削除後 6 秒以内なら「取り消す」で復元できます。"
             case .deleteAction: return "削除"
@@ -191,13 +188,12 @@ struct L10n {
             case .exportCSVTitle: return "CSVで書き出す"
             case .cardsCount: return "%d件の名刺"
             case .deleteAllCards: return "すべての名刺を削除"
+            case .langAuto: return "自動"
             }
             
         case .english, .system:
             switch key {
-            case .title: return "Business Card Scanner"
             case .scan: return "Scan"
-            case .edit: return "Edit"
             case .resetAllTitle: return "Delete all cards?"
             case .resetAllMessage: return "You can undo this for 6 seconds after deleting."
             case .deleteAction: return "Delete"
@@ -313,6 +309,7 @@ struct L10n {
             case .exportCSVTitle: return "Export CSV"
             case .cardsCount: return "%d cards"
             case .deleteAllCards: return "Delete all cards"
+            case .langAuto: return "Auto"
             }
         }
     }

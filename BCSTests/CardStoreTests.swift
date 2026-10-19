@@ -79,6 +79,28 @@ final class CardStoreTests: XCTestCase {
         XCTAssertEqual(CardStore(directory: directory).cards.first?.reviewCount, 0)
     }
 
+    func testLoadsV1StateFileAndKeepsCardsAfterSave() throws {
+        let v1 = """
+        {"version":1,"selectedIndex":0,"cards":[
+          {"id":"8C8D5B3A-6D1E-4F3E-9D6B-1F2E3D4C5B6A","name":"John Smith","company":"ACME Inc.",
+           "phones":[{"id":"1C8D5B3A-6D1E-4F3E-9D6B-1F2E3D4C5B6A","label":"main","number":"TEL: 408-555-1234"}],
+           "email":"john@acme.com","address":"123 Main St, San Jose, CA 95110",
+           "timeZoneCode":"PST","timeZoneId":"America/Los_Angeles","timeZoneSourceAddress":"95110"}]}
+        """
+        try Data(v1.utf8).write(to: directory.appendingPathComponent("business_cards.json"))
+
+        let store = CardStore(directory: directory)
+        XCTAssertEqual(store.cards.count, 1)
+        XCTAssertEqual(store.cards.first?.name.value, "John Smith")
+        XCTAssertEqual(store.cards.first?.timeZone, .pst)
+        XCTAssertEqual(store.cards.first?.scannedAt, .distantPast)
+
+        store.append(card("New"))
+        let reloaded = CardStore(directory: directory)
+        XCTAssertEqual(reloaded.cards.map(\.name.value), ["John Smith", "New"])
+        XCTAssertEqual(reloaded.cards.first?.phones.first?.number, "TEL: 408-555-1234")
+    }
+
     func testUnreadableFileIsSetAsideNotOverwritten() throws {
         let json = directory.appendingPathComponent("business_cards.json")
         try Data("{not json".utf8).write(to: json)

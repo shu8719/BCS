@@ -49,12 +49,17 @@ final class ScanFlowTests: XCTestCase {
         XCTAssertEqual(flow.stage, .idle)
     }
 
-    func testRetakeGoesBackToCamera() {
+    func testRetakeWaitsForResultDismissalBeforeOpeningCamera() {
         let flow = ScanFlow(resolver: repoTimeZoneResolver())
         _ = flow.handleRecognized(items: sampleUSCardItems())
         flow.retake()
+        XCTAssertEqual(flow.stage, .retaking)        // result cover is dismissing; camera not yet presented
+        XCTAssertFalse(flow.isShowingResult)
+        flow.resumeCameraAfterRetake()               // called from the cover's onDismiss
         XCTAssertEqual(flow.stage, .camera)
         flow.cancel()
+        XCTAssertEqual(flow.stage, .idle)
+        flow.resumeCameraAfterRetake()               // no-op outside of retaking
         XCTAssertEqual(flow.stage, .idle)
     }
 

@@ -9,6 +9,8 @@ final class ScanFlow {
     enum Stage: Equatable {
         case idle, camera, photoPicker, processing
         case result(BusinessCard)
+        /// The result cover is dismissing; the camera opens from its onDismiss (`resumeCameraAfterRetake`).
+        case retaking
     }
     
     enum ScanError: Equatable {
@@ -40,7 +42,17 @@ final class ScanFlow {
     func startPhotoPicker() { stage = .photoPicker }
     func beginProcessing() { stage = .processing }
     func cancel() { stage = .idle }
-    func retake() { stage = .camera }
+    
+    /// Presenting the camera sheet while the result cover is still dismissing is refused by UIKit,
+    /// so retake goes through `.retaking` and the presentation layer calls `resumeCameraAfterRetake()`.
+    func retake() {
+        guard case .result = stage else { return }
+        stage = .retaking
+    }
+    
+    func resumeCameraAfterRetake() {
+        if stage == .retaking { stage = .camera }
+    }
     
     /// Parses the OCR fragments and moves to the result stage.
     /// Returns false (and sets `error = .empty`) when nothing usable was read.
