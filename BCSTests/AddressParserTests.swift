@@ -23,6 +23,19 @@ final class AddressParserTests: XCTestCase {
         XCTAssertFalse(parser.looksLikeAddressLine("www.example.com"))
     }
 
+    func testLeadingAddressLabelIsStripped() {
+        let lines = [
+            ocrLine("Hanako Sato",          y: 0.70, height: 0.06),
+            ocrLine("A 1120 NW Couch St",   y: 0.25),
+            ocrLine("Portland, OR 97209",   y: 0.21),
+        ]
+        let text = parser.pickAddressBlockInfo(from: lines).text
+        XCTAssertTrue(text.hasPrefix("1120 NW Couch St"), text)
+
+        let labeled = [ocrLine("Address: 12889 Lakeside Drive", y: 0.25), ocrLine("Orlando, FL 32826", y: 0.21)]
+        XCTAssertTrue(parser.pickAddressBlockInfo(from: labeled).text.hasPrefix("12889"), parser.pickAddressBlockInfo(from: labeled).text)
+    }
+
     func testMultiLineAddressBlockIsJoined() {
         let lines = [
             ocrLine("ACME Inc.",             y: 0.85, height: 0.05),

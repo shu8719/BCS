@@ -55,6 +55,16 @@ final class CardDetailTextTests: XCTestCase {
         XCTAssertNil(CardDetailText.reviewNote(field: "clean", lang: .japanese))
     }
 
+    func testNotesForMalformedAndInferred() {
+        XCTAssertEqual(CardDetailText.reviewNote(field: ContactField("408-555-123", reviewReason: .malformed), lang: .japanese),
+                       "電話番号の桁数が合いません")
+        XCTAssertEqual(CardDetailText.reviewNote(field: ContactField("Ridgelinerobotics", reviewReason: .inferred), lang: .japanese),
+                       "メールアドレスから推測しました")
+        var c = card()
+        c.company = ContactField("Ridgelinerobotics", reviewReason: .inferred)
+        XCTAssertEqual(CardDetailText.reviewBannerSubtitle(card: c, lang: .japanese), "メールアドレスから推測した項目があります")
+    }
+
     func testBannerSubtitleUsesFirstReason() {
         var c = card()
         c.phones = [LabeledNumber(label: .direct, field: ContactField("+1 407-555-0173", rawValue: "D: 407-555.0173", reviewReason: .normalized))]

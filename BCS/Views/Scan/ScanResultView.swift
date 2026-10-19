@@ -82,8 +82,14 @@ struct ScanResultView: View {
     }
     
     private var bannerText: String? {
+        if let phone = card.phones.first(where: { $0.field.reviewReason == .malformed }) {
+            return L10n.t(.bannerMalformedPhone, lang: lang, phone.number)
+        }
         if let phone = card.phones.first(where: { $0.field.reviewReason == .normalized }) {
             return L10n.t(.bannerNormalizedPhone, lang: lang, phone.field.rawValue ?? "")
+        }
+        if card.company.reviewReason == .inferred {
+            return L10n.t(.bannerInferredCompany, lang: lang)
         }
         if card.name.reviewReason == .missing || card.company.reviewReason == .missing {
             return L10n.t(.bannerMissing, lang: lang)
@@ -105,13 +111,14 @@ struct ScanResultView: View {
                     label: L10n.t(.phoneWithLabel, lang: lang, CardDetailText.phoneLabel(phone.label, lang: lang)),
                     field: phone.field)
             }
-            row(.email, icon: .mail, label: L10n.t(.email, lang: lang), field: card.email)
+            row(.email, icon: .mail, label: L10n.t(.email, lang: lang), field: card.email, singleLine: true)
             row(.address, icon: .location, label: L10n.t(.address, lang: lang), field: card.address,
                 display: card.address.value.replacingOccurrences(of: " / ", with: ", "))
         }
     }
     
-    private func row(_ target: Target, icon: BCSIcon, label: String, field: ContactField, display: String? = nil) -> some View {
+    private func row(_ target: Target, icon: BCSIcon, label: String, field: ContactField,
+                     display: String? = nil, singleLine: Bool = false) -> some View {
         let flagged = field.needsReview
         return FieldRow(
             icon: icon,
@@ -119,6 +126,7 @@ struct ScanResultView: View {
             value: display ?? (field.isEmpty ? "—" : field.value),
             trailing: .edit,
             highlighted: flagged,
+            singleLine: singleLine,
             onTrailing: { editing = target }
         )
         .contentShape(Rectangle())

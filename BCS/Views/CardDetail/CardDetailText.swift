@@ -37,7 +37,9 @@ enum CardDetailText {
         guard let reason = card.allFields.compactMap(\.reviewReason).first else { return nil }
         switch reason {
         case .normalized:       return L10n.t(.reviewSubtitleNormalized, lang: lang)
+        case .malformed:        return L10n.t(.reviewSubtitleMalformed, lang: lang)
         case .missing:          return L10n.t(.reviewSubtitleMissing, lang: lang)
+        case .inferred:         return L10n.t(.reviewSubtitleInferred, lang: lang)
         case .timeZoneConflict: return L10n.t(.reviewNoteTZConflict, lang: lang)
         }
     }
@@ -47,7 +49,9 @@ enum CardDetailText {
         guard let reason = field.reviewReason else { return nil }
         switch reason {
         case .normalized:       return L10n.t(.reviewNoteNormalized, lang: lang, field.rawValue ?? "")
+        case .malformed:        return L10n.t(.reviewNoteMalformed, lang: lang)
         case .missing:          return L10n.t(.reviewNoteMissing, lang: lang)
+        case .inferred:         return L10n.t(.reviewNoteInferred, lang: lang)
         case .timeZoneConflict: return L10n.t(.reviewNoteTZConflict, lang: lang)
         }
     }

@@ -48,6 +48,13 @@ final class PhoneParserTests: XCTestCase {
         XCTAssertEqual(digits(phones), ["4075550173"])
     }
 
+    func testCellAndOfficeLabels() {
+        XCTAssertEqual(parser.extractPhones(from: [ocrLine("C 512-555-0187", y: 0.4)]).first?.label, .mobile)
+        XCTAssertEqual(parser.extractPhones(from: [ocrLine("Cell: 512-555-0187", y: 0.4)]).first?.label, .mobile)
+        XCTAssertEqual(parser.extractPhones(from: [ocrLine("O 407.555.0162", y: 0.4)]).first?.label, .main)
+        XCTAssertEqual(parser.extractPhones(from: [ocrLine("Office: 407.555.0162", y: 0.4)]).first?.label, .main)
+    }
+
     func testDedupeKeepsLabeledVariant() {
         let phones = parser.dedupePhones([
             LabeledNumber(label: .unknown, number: "408-555-1234"),

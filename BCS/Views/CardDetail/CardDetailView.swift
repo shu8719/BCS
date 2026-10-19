@@ -30,7 +30,7 @@ struct CardDetailView: View {
                             meta(card)
                         }
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
+                        .padding(.bottom, 100)   // keep the last row above the tab bar
                     }
                 }
             }
@@ -145,7 +145,7 @@ struct CardDetailView: View {
                 fieldRow(icon: .call, label: CardDetailText.phoneLabel(phone.label, lang: lang), field: phone.field)
             }
             if !card.email.isEmpty || card.email.needsReview {
-                fieldRow(icon: .mail, label: L10n.t(.email, lang: lang), field: card.email)
+                fieldRow(icon: .mail, label: L10n.t(.email, lang: lang), field: card.email, singleLine: true)
             }
             if !card.address.isEmpty || card.address.needsReview {
                 fieldRow(icon: .location, label: L10n.t(.address, lang: lang), field: card.address,
@@ -155,7 +155,8 @@ struct CardDetailView: View {
     }
     
     @ViewBuilder
-    private func fieldRow(icon: BCSIcon, label: String, field: ContactField, display: String? = nil) -> some View {
+    private func fieldRow(icon: BCSIcon, label: String, field: ContactField, display: String? = nil,
+                          singleLine: Bool = false) -> some View {
         let flagged = field.needsReview
         FieldRow(
             icon: icon,
@@ -164,6 +165,7 @@ struct CardDetailView: View {
             trailing: flagged ? .edit : .copy,
             highlighted: flagged,
             labelColor: flagged ? M3.warning : M3.onSurfaceVariant,
+            singleLine: singleLine,
             onTrailing: {
                 if flagged {
                     editDraft = store.card(id: cardID)

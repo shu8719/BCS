@@ -32,6 +32,29 @@ final class CardParserTests: XCTestCase {
         XCTAssertEqual(texts, ["Tel: 408-555-1234"])
     }
 
+    func testCompanyPrefersAllCapsLineMatchingEmailDomain() {
+        let items = [
+            ocrItem("CASCADE BIOTECH",             y: 0.85, height: 0.05),
+            ocrItem("Hanako Sato",                 y: 0.70, height: 0.06),
+            ocrItem("Research Scientist",          y: 0.62),
+            ocrItem("hanako.sato@cascadebiotech.com", y: 0.32),
+        ]
+        let card = CardParser().parse(items: items)
+        XCTAssertEqual(card.company.value, "CASCADE BIOTECH")
+        XCTAssertFalse(card.company.needsReview)
+        XCTAssertEqual(card.name.value, "Hanako Sato")
+    }
+
+    func testCompanyGuessedFromEmailDomainIsFlagged() {
+        let items = [
+            ocrItem("Tarou Yamada",         y: 0.70, height: 0.06),
+            ocrItem("tarou@ridgelinerobotics.com", y: 0.32),
+        ]
+        let card = CardParser().parse(items: items)
+        XCTAssertEqual(card.company.value, "Ridgelinerobotics")
+        XCTAssertEqual(card.company.reviewReason, .inferred)
+    }
+
     func testReturnsEmptyCardForNoItems() {
         let card = CardParser().parse(items: [])
         XCTAssertEqual(card.name.value, "")

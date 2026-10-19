@@ -10,8 +10,10 @@ let usStateCodes: Set<String> = [
 
 /// Why a field is marked "要確認". Set by the parser / resolver only (spec §4); the UI never decides this.
 enum ReviewReason: String, Codable, Equatable {
-    case normalized        // formatting was corrected, original kept in rawValue
+    case normalized        // kept for files written by earlier builds; reformatting alone no longer flags
+    case malformed         // phone number has the wrong number of digits
     case missing           // name or company could not be read
+    case inferred          // company guessed from the e-mail domain
     case timeZoneConflict  // ZIP and area code disagree
 }
 

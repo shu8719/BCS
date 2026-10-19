@@ -5,7 +5,7 @@ final class PhoneParser {
     private static let labelRegex = try? NSRegularExpression(
         // Single-letter labels (T/M/D/P/F) may be followed by a colon or directly by the number
         // ("D 407-555.0173"); the boundary keeps "of:" / "ip:" from being read as F: / P:.
-        pattern: #"(?i)(?:^|\b)(tel\.?|phone|ph\.?|mobile\.?|direct|fax|facsimile)(?=\b|[:：])|(?<![\p{L}\p{N}])[TMDPF](?=\s*[:：]|\s+\+?\(?\d)"#
+        pattern: #"(?i)(?:^|\b)(tel\.?|phone|ph\.?|mobile\.?|cell|office|direct|fax|facsimile)(?=\b|[:：])|(?<![\p{L}\p{N}])[TMDPCOF](?=\s*[:：]|\s+\+?\(?\d)"#
     )
     // Separators are horizontal whitespace only, so a number never spans two OCR lines.
     private static let numberRegexes: [NSRegularExpression] = [
@@ -196,15 +196,15 @@ final class PhoneParser {
             }
             
             switch key {
-            case "tel", "tel.", "phone", "ph", "ph.":
+            case "tel", "tel.", "phone", "ph", "ph.", "office":
                 add(.main, "TEL")
-            case "mobile", "mobile.":
+            case "mobile", "mobile.", "cell":
                 add(.mobile, "Mobile")
             case "direct":
                 add(.direct, "Direct")
-            case "t", "p":
+            case "t", "p", "o":
                 add(.main, "T:")
-            case "m":
+            case "m", "c":
                 add(.mobile, "M:")
             case "d":
                 add(.direct, "D:")

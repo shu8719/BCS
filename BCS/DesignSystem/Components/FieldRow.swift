@@ -12,6 +12,8 @@ struct FieldRow: View {
     var trailing: FieldRowTrailing = .none
     var highlighted: Bool = false
     var labelColor: Color = M3.onSurfaceVariant
+    /// E-mail addresses and phone numbers read better shrunk onto one line than wrapped mid-word.
+    var singleLine: Bool = false
     var onTrailing: (() -> Void)? = nil
     
     var body: some View {
@@ -24,6 +26,8 @@ struct FieldRow: View {
                 Text(value)
                     .textStyle(.bodyLarge)
                     .foregroundStyle(M3.onSurface)
+                    .lineLimit(singleLine ? 1 : nil)
+                    .minimumScaleFactor(singleLine ? 0.8 : 1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             if trailing != .none, let onTrailing {

@@ -18,7 +18,8 @@ final class CardParser {
         let texts = lines.map(\.text)
         
         let email = texts.compactMap(extractEmail).first ?? ""
-        var company = pickCompany(from: texts, email: email)
+        let picked = pickCompany(from: texts, email: email)
+        var company = picked.value
         
         let addressInfo = addressParser.pickAddressBlockInfo(from: lines)
         let addrExtract = phoneParser.extractPhonesFromAddressText(addressInfo.text)
@@ -48,7 +49,7 @@ final class CardParser {
         
         var result = BusinessCard()
         result.name = ContactField(name)
-        result.company = ContactField(company)
+        result.company = ContactField(company, reviewReason: picked.inferred && !company.isEmpty ? .inferred : nil)
         result.phones = phones
         result.email = ContactField(email)
         result.address = ContactField(address)
@@ -131,16 +132,37 @@ final class CardParser {
         return ns.substring(with: m.range)
     }
     
-    private func pickCompany(from texts: [String], email: String) -> String {
+    /// Company name, and whether it had to be guessed from the e-mail domain.
+    /// 1. a line whose letters match the e-mail domain ("CASCADE BIOTECH" ↔ cascadebiotech.com)
+    /// 2. the best-scoring line (legal suffixes such as Inc. / LLC)
+    /// 3. the domain itself, capitalized, flagged as inferred
+    private func pickCompany(from texts: [String], email: String) -> (value: String, inferred: Bool) {
         let pool = texts.filter { !isJunkForCompany($0) }
-        let scored = pool.map { t -> (String, Int) in (t, companyScore(t)) }
         
-        if let best = scored.max(by: { $0.1 < $1.1 }), best.1 >= 4 {
-            return best.0
+        let domainKey = Self.domainKey(of: email)
+        if domainKey.count >= 4 {
+            if let exact = pool.first(where: { normalizeKey($0) == domainKey }) {
+                return (exact, false)
+            }
+            if let partial = pool.first(where: { normalizeKey($0).contains(domainKey) && companyScore($0) >= 0 }) {
+                return (partial, false)
+            }
         }
         
-        if !email.isEmpty { return companyFromEmail(email) }
-        return ""
+        let scored = pool.map { t -> (String, Int) in (t, companyScore(t)) }
+        if let best = scored.max(by: { $0.1 < $1.1 }), best.1 >= 4 {
+            return (best.0, false)
+        }
+        
+        if !email.isEmpty { return (companyFromEmail(email), true) }
+        return ("", false)
+    }
+    
+    /// "hanako@cascadebiotech.com" → "cascadebiotech"
+    private static func domainKey(of email: String) -> String {
+        guard let at = email.firstIndex(of: "@") else { return "" }
+        let domain = email[email.index(after: at)...]
+        return domain.split(separator: ".").first.map { String($0).lowercased() } ?? ""
     }
     
     private func companyScore(_ s: String) -> Int {

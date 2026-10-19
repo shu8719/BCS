@@ -39,8 +39,8 @@ struct L10n {
 
         // Card detail (03)
         case contactInfo, reviewItemsTitle, markReviewed, reviewSuffix
-        case reviewNoteNormalized, reviewNoteMissing, reviewNoteTZConflict
-        case reviewSubtitleNormalized, reviewSubtitleMissing
+        case reviewNoteNormalized, reviewNoteMissing, reviewNoteTZConflict, reviewNoteMalformed, reviewNoteInferred
+        case reviewSubtitleNormalized, reviewSubtitleMissing, reviewSubtitleMalformed, reviewSubtitleInferred
         case actionCall, actionMail, actionMap
         case phoneDirect, phoneMain, phoneMobile, phoneGeneric
         case localTimeLine, scannedOn, tzFromZip, tzFromAreaCode, tzManual, deleteThisCard
@@ -50,7 +50,7 @@ struct L10n {
         case tzAuto, tzUnknown, tzNameEST, tzNameCST, tzNameMST, tzNamePST, tzBasisZip, tzBasisAreaCode
 
         // Scan result (06) and scan entry
-        case scanResultTitle, readFieldsCount, tapToFix, bannerNormalizedPhone, bannerMissing
+        case scanResultTitle, readFieldsCount, tapToFix, bannerNormalizedPhone, bannerMissing, bannerMalformedPhone, bannerInferredCompany
         case retake, saveCard, scanWithCamera, scanFromPhoto, tzFromZipShort, tzFromAreaCodeShort
 
         // Settings (07)
@@ -148,6 +148,10 @@ struct L10n {
             case .reviewNoteTZConflict: return "郵便番号と市外局番の判定が異なります"
             case .reviewSubtitleNormalized: return "読み取り時に書式を補正しました"
             case .reviewSubtitleMissing: return "読み取れなかった項目があります"
+            case .reviewNoteMalformed: return "電話番号の桁数が合いません"
+            case .reviewNoteInferred: return "メールアドレスから推測しました"
+            case .reviewSubtitleMalformed: return "桁数が合わない電話番号があります"
+            case .reviewSubtitleInferred: return "メールアドレスから推測した項目があります"
             case .actionCall: return "電話"
             case .actionMail: return "メール"
             case .actionMap: return "地図"
@@ -179,6 +183,8 @@ struct L10n {
             case .tapToFix: return "タップで修正"
             case .bannerNormalizedPhone: return "電話番号「%@」を整形しました。保存前に確認してください。"
             case .bannerMissing: return "名前または会社名を読み取れませんでした。"
+            case .bannerMalformedPhone: return "電話番号「%@」の桁数が合いません。保存前に確認してください。"
+            case .bannerInferredCompany: return "会社名をメールアドレスから推測しました。保存前に確認してください。"
             case .retake: return "撮り直す"
             case .saveCard: return "保存する"
             case .scanWithCamera: return "カメラでスキャン"
@@ -272,6 +278,10 @@ struct L10n {
             case .reviewNoteTZConflict: return "ZIP and area code disagree"
             case .reviewSubtitleNormalized: return "Formatting was corrected on scan"
             case .reviewSubtitleMissing: return "Some fields could not be read"
+            case .reviewNoteMalformed: return "Wrong number of digits"
+            case .reviewNoteInferred: return "Inferred from the email address"
+            case .reviewSubtitleMalformed: return "A phone number has the wrong number of digits"
+            case .reviewSubtitleInferred: return "Some fields were inferred from the email address"
             case .actionCall: return "Call"
             case .actionMail: return "Email"
             case .actionMap: return "Map"
@@ -303,6 +313,8 @@ struct L10n {
             case .tapToFix: return "Tap to fix"
             case .bannerNormalizedPhone: return "Phone number “%@” was reformatted. Check it before saving."
             case .bannerMissing: return "Name or company could not be read."
+            case .bannerMalformedPhone: return "Phone number “%@” has the wrong number of digits. Check it before saving."
+            case .bannerInferredCompany: return "The company was inferred from the email address. Check it before saving."
             case .retake: return "Retake"
             case .saveCard: return "Save"
             case .scanWithCamera: return "Scan with camera"

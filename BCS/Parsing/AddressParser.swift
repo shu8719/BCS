@@ -25,7 +25,12 @@ final class AddressParser {
     ])
     // A phone number with at most a bullet and/or a short label in front: "• 407.555.0162", "D 407-555.0173".
     private static let barePhoneRegex = try? NSRegularExpression(
-        pattern: #"^(?:[•·\-–—*|]+\s*)?(?:(?:tel|phone|ph|mobile|cell|direct|office|main|fax|t|m|d|p|c|f)\.?\s*[:：\-]?\s*)?\+?[\d\s().\-]*\d[\d\s().\-]*(?:\s*(?:ext\.?|x|#)\s*\d{1,6})?$"#,
+        pattern: #"^(?:[•·\-–—*|]+\s*)?(?:(?:tel|phone|ph|mobile|cell|direct|office|main|fax|t|m|d|p|c|o|f)\.?\s*[:：\-]?\s*)?\+?[\d\s().\-]*\d[\d\s().\-]*(?:\s*(?:ext\.?|x|#)\s*\d{1,6})?$"#,
+        options: [.caseInsensitive]
+    )
+    // "A 1120 NW Couch St", "Add: …", "Address: …" — a label glued to the front of the street line.
+    private static let leadingAddressLabelRegex = try? NSRegularExpression(
+        pattern: #"^(?:(?:address|addr|add)\s*[:：\-]?\s+|a\s*[:：\-]?\s+(?=\d))"#,
         options: [.caseInsensitive]
     )
     
@@ -463,7 +468,8 @@ final class AddressParser {
             if isPhoneNoteSegment(trimmed) { continue }
             if isBarePhoneLine(trimmed) { continue }
             
-            var cleaned = stripLeadingPhoneLabelTokens(trimmed)
+            var cleaned = stripLeadingAddressLabel(trimmed)
+            cleaned = stripLeadingPhoneLabelTokens(cleaned)
             cleaned = stripPhoneNotePhrases(cleaned)
             cleaned = normalizeSpace(cleaned)
             
@@ -482,6 +488,13 @@ final class AddressParser {
         }
         
         return normalizeSpace(kept.joined(separator: " / "))
+    }
+    
+    private func stripLeadingAddressLabel(_ s: String) -> String {
+        guard let re = Self.leadingAddressLabelRegex else { return s }
+        let ns = s as NSString
+        guard let m = re.firstMatch(in: s, range: NSRange(location: 0, length: ns.length)) else { return s }
+        return normalizeSpace(ns.substring(from: m.range.length))
     }
     
     /// "John Smith 123 Main St" -> "123 Main St" when a two-word name precedes a numbered line.
@@ -519,7 +532,7 @@ final class AddressParser {
         let t = normalizeSpace(s)
         guard !t.isEmpty else { return t }
         
-        let labelWithPunct = #"^(tel|phone|ph|mobile|cell|direct|office|main|fax|t|m|d|p|c)\s*[:：\-]\s*"#
+        let labelWithPunct = #"^(tel|phone|ph|mobile|cell|direct|office|main|fax|t|m|d|p|c|o)\s*[:：\-]\s*"#
         if let range = t.range(of: labelWithPunct, options: [.regularExpression, .caseInsensitive]) {
             let rest = String(t[range.upperBound...])
             return normalizeSpace(rest)
