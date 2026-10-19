@@ -199,17 +199,18 @@ struct CardListView: View {
     }
     
     /// Time zone filter with a card count per zone (counts cover every card, not the current filter).
+    /// One Text per item: a Menu Picker splits multiple Texts into separate rows and the tag lands on the last one.
     private var zoneMenu: some View {
         Menu {
             Picker("", selection: $query.zone) {
-                Text(L10n.t(.allTimeZones, lang: lang))
-                Text("\(store.cards.count)")
+                Text("\(L10n.t(.allTimeZones, lang: lang))（\(store.cards.count)）")
                     .tag(USTimeZone?.none)
+                Divider()
                 ForEach(USTimeZone.allCases, id: \.self) { zone in
                     let count = store.cards.filter { $0.timeZone == zone }.count
-                    Text("\(zoneName(zone)) (\(zone.rawValue))")
-                    Text("\(count)")
+                    Text("\(zoneName(zone))（\(zone.rawValue)）・\(L10n.t(.countSuffix, lang: lang, count))")
                         .tag(USTimeZone?.some(zone))
+                        .disabled(count == 0)
                 }
             }
         } label: {
