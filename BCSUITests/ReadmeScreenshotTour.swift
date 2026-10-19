@@ -3,7 +3,7 @@ import XCTest
 /// Captures the README screen images (docs/screens) on a simulator.
 ///
 /// Skipped unless `BCS_SHOT_DIR` is set, so it never runs as part of Cmd+U. To regenerate:
-/// 1. add the sample cards to the simulator: `xcrun simctl addmedia <device> tarou_yamada_card.png hanako_sato_card.png`
+/// 1. add the sample cards to the simulator: `xcrun simctl addmedia <device> sample/tarou_yamada_card.png sample/hanako_sato_card.png`
 /// 2. optionally `xcrun simctl status_bar <device> override --time "$(date +%H:%M)" --batteryState charged --batteryLevel 100`
 ///    (keep the real time so it agrees with the local times shown on the cards)
 /// 3. `TEST_RUNNER_BCS_SHOT_DIR=<dir> xcodebuild test -scheme BCS -destination 'id=<device>' -only-testing:BCSUITests/ReadmeScreenshotTour`
