@@ -5,9 +5,9 @@ struct RootView: View {
     
     var body: some View {
         TabView {
-            ContentView()
+            CardListView()
                 .tabItem {
-                    Label(L10n.t(.tabScanner, lang: settings.language), systemImage: "doc.text.viewfinder")
+                    Label(L10n.t(.tabCards, lang: settings.language), systemImage: "person.2")
                 }
             
             SettingsView()

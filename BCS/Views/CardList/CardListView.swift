@@ -1,0 +1,258 @@
+import SwiftUI
+
+/// 01 名刺一覧: brand bar, search, filter chips, cards grouped by week, scan FAB.
+struct CardListView: View {
+    @EnvironmentObject private var settings: AppSettings
+    @Environment(CardStore.self) private var store
+    
+    @State private var query = CardListQuery()
+    @State private var isSelecting = false
+    @State private var selected: Set<UUID> = []
+    @State private var showSortDialog = false
+    @State private var showCompanyDialog = false
+    @State private var showZoneDialog = false
+    
+    // Scan flow placeholder (replaced by ScanFlow in the scan-result task).
+    @State private var showScanner = false
+    @State private var scanDraft = BusinessCard()
+    @State private var showScanDraftEditor = false
+    @State private var isProcessing = false
+    @State private var scanAlert: ScanAlert?
+    
+    private enum ScanAlert { case empty, failed }
+    
+    private var lang: AppSettings.Language { settings.language }
+    
+    var body: some View {
+        NavigationStack {
+            ZStack(alignment: .bottomTrailing) {
+                M3.surfaceContainerLow.ignoresSafeArea()
+                
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 12) {
+                        topBar
+                        SearchBar(text: $query.search, placeholder: L10n.t(.searchPlaceholder, lang: lang))
+                            .padding(.horizontal, 16)
+                        filterChips
+                        listBody
+                        Color.clear.frame(height: 96)
+                    }
+                    .padding(.top, 4)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                
+                if isProcessing {
+                    Color.black.opacity(0.35).ignoresSafeArea()
+                    ProgressView().tint(.white).scaleEffect(1.5)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                
+                if !isSelecting {
+                    ScanFAB(label: L10n.t(.scan, lang: lang)) {
+                        scanDraft = BusinessCard()
+                        showScanner = true
+                    }
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 16)
+                }
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .bottom) {
+                if store.undoState != nil { undoBar }
+            }
+            .animation(.easeInOut(duration: 0.2), value: store.undoState != nil)
+            .navigationDestination(for: UUID.self) { id in
+                CardDetailPlaceholder(cardID: id)
+            }
+            .confirmationDialog(L10n.t(.sortTitle, lang: lang), isPresented: $showSortDialog, titleVisibility: .visible) {
+                Button(L10n.t(.sortNewest, lang: lang)) { query.sort = .scannedAtDesc }
+                Button(L10n.t(.sortName, lang: lang)) { query.sort = .nameAsc }
+                Button(L10n.t(.sortCompany, lang: lang)) { query.sort = .companyAsc }
+            }
+            .confirmationDialog(L10n.t(.filterCompany, lang: lang), isPresented: $showCompanyDialog, titleVisibility: .visible) {
+                Button(L10n.t(.allCompanies, lang: lang)) { query.company = nil }
+                ForEach(CardListFilter.companies(in: store.cards), id: \.self) { company in
+                    Button(company) { query.company = company }
+                }
+            }
+            .confirmationDialog(L10n.t(.filterTimeZone, lang: lang), isPresented: $showZoneDialog, titleVisibility: .visible) {
+                Button(L10n.t(.allTimeZones, lang: lang)) { query.zone = nil }
+                ForEach(USTimeZone.allCases, id: \.self) { zone in
+                    Button(zone.rawValue) { query.zone = zone }
+                }
+            }
+            .sheet(isPresented: $showScanner) {
+                ScannerView(
+                    card: $scanDraft,
+                    onFinish: { isProcessing = false; showScanDraftEditor = true },
+                    onEmpty:  { isProcessing = false; scanAlert = .empty },
+                    onFailed: { isProcessing = false; scanAlert = .failed },
+                    onStartProcessing: { isProcessing = true }
+                )
+            }
+            .sheet(isPresented: $showScanDraftEditor) {
+                EditCardView(card: $scanDraft, onSave: { store.append($0) })
+            }
+            .alert(
+                Text(scanAlert == .failed ? L10n.t(.scanFailedTitle, lang: lang) : L10n.t(.scanEmptyTitle, lang: lang)),
+                isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } }),
+                presenting: scanAlert
+            ) { _ in
+                Button(L10n.t(.ok, lang: lang), role: .cancel) {}
+            } message: { alert in
+                Text(alert == .failed ? L10n.t(.scanFailedMessage, lang: lang) : L10n.t(.scanEmptyMessage, lang: lang))
+            }
+        }
+    }
+    
+    // MARK: - Top bar / chips
+    
+    private var topBar: some View {
+        HStack(spacing: 0) {
+            BrandWordmark()
+            Spacer(minLength: 10)
+            IconButton(.sort) { showSortDialog = true }
+            IconButton(.checklist) { isSelecting = true }
+        }
+        .padding(.leading, 16)
+        .padding(.trailing, 4)
+        .padding(.vertical, 10)
+    }
+    
+    private var filterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                let all = store.cards.count
+                let review = store.cards.filter(\.needsReview).count
+                FilterChip("\(L10n.t(.filterAll, lang: lang)) \(all)", leading: query.needsReviewOnly ? nil : .check,
+                           selected: !query.needsReviewOnly) {
+                    query.needsReviewOnly = false
+                }
+                FilterChip("\(L10n.t(.filterNeedsReview, lang: lang)) \(review)", leading: .warning,
+                           selected: query.needsReviewOnly, tint: .warning) {
+                    query.needsReviewOnly.toggle()
+                }
+                FilterChip(query.company ?? L10n.t(.filterCompany, lang: lang), trailing: .expandMore,
+                           selected: query.company != nil) {
+                    showCompanyDialog = true
+                }
+                FilterChip(query.zone?.rawValue ?? L10n.t(.filterTimeZone, lang: lang), trailing: .expandMore,
+                           selected: query.zone != nil) {
+                    showZoneDialog = true
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+    }
+    
+    // MARK: - List
+    
+    private var listBody: some View {
+        let cards = CardListFilter.apply(query, to: store.cards)
+        let groups = CardListFilter.group(cards, now: Date(), calendar: .current)
+        return VStack(alignment: .leading, spacing: 12) {
+            if store.cards.isEmpty {
+                emptyState
+            } else {
+                ForEach(groups, id: \.group) { entry in
+                    SectionHeader(groupTitle(entry.group),
+                                  trailing: L10n.t(.countSuffix, lang: lang, entry.cards.count))
+                    GroupedRows(cornerRadius: 16) {
+                        ForEach(entry.cards) { card in
+                            row(for: card)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+    
+    private func row(for card: BusinessCard) -> some View {
+        TimelineView(.everyMinute) { context in
+            if isSelecting {
+                Button {
+                    toggleSelection(card.id)
+                } label: {
+                    ContactRow(card: card, isSelecting: true, isSelected: selected.contains(card.id), now: context.date)
+                }
+                .buttonStyle(.plain)
+            } else {
+                NavigationLink(value: card.id) {
+                    ContactRow(card: card, now: context.date)
+                }
+                .buttonStyle(.plain)
+                .simultaneousGesture(
+                    LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                        isSelecting = true
+                        selected = [card.id]
+                    }
+                )
+            }
+        }
+    }
+    
+    private func toggleSelection(_ id: UUID) {
+        if selected.contains(id) { selected.remove(id) } else { selected.insert(id) }
+    }
+    
+    private func groupTitle(_ group: CardGroup) -> String {
+        switch group {
+        case .thisWeek: return L10n.t(.groupThisWeek, lang: lang)
+        case .earlier:  return L10n.t(.groupEarlier, lang: lang)
+        }
+    }
+    
+    private var emptyState: some View {
+        Text(L10n.t(.emptyCardsMessage, lang: lang))
+            .textStyle(.bodyMedium)
+            .foregroundStyle(M3.onSurfaceVariant)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                    .foregroundStyle(M3.outlineVariant)
+            )
+    }
+    
+    // MARK: - Undo
+    
+    private var undoBar: some View {
+        HStack(spacing: 12) {
+            if let state = store.undoState {
+                Text(undoMessage(for: state.operation))
+                    .textStyle(.bodySmall)
+                    .foregroundStyle(M3.onSurfaceVariant)
+                Spacer()
+                BCSButton(L10n.t(.undo, lang: lang), style: .tonal) { store.restoreUndo() }
+            }
+        }
+        .padding(12)
+        .background(M3.surfaceContainerLowest)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+    
+    private func undoMessage(for operation: CardStore.UndoOperation) -> String {
+        switch operation {
+        case .deleteSingle, .deleteMany: return L10n.t(.undoDeletedMessage, lang: lang)
+        case .deleteAll:                 return L10n.t(.undoResetMessage, lang: lang)
+        }
+    }
+}
+
+/// Stand-in until the detail screen task; shows the old summary card.
+private struct CardDetailPlaceholder: View {
+    @Environment(CardStore.self) private var store
+    let cardID: UUID
+    
+    var body: some View {
+        ScrollView {
+            CardSummaryView(card: store.card(id: cardID) ?? BusinessCard())
+                .padding(16)
+        }
+        .background(M3.surfaceContainerLow)
+    }
+}

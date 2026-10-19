@@ -27,6 +27,19 @@ struct L10n {
 
         case exportCSV
         case needsReview, rawValue
+
+        // Card list (01)
+        case tabCards
+        case searchPlaceholder
+        case filterAll, filterNeedsReview, filterCompany, filterTimeZone
+        case allCompanies, allTimeZones
+        case groupThisWeek, groupEarlier, countSuffix, localTime
+        case sortTitle, sortNewest, sortName, sortCompany
+    }
+
+    /// Formats a key that contains %d / %@ placeholders.
+    static func t(_ key: Key, lang: AppSettings.Language, _ args: CVarArg...) -> String {
+        String(format: t(key, lang: lang), locale: Locale(identifier: "en_US_POSIX"), arguments: args)
     }
     
     /// Maps `.system` to the concrete language the device prefers.
@@ -87,6 +100,23 @@ struct L10n {
             case .exportCSV: return "CSV出力"
             case .needsReview: return "要確認"
             case .rawValue: return "読み取り元"
+
+            case .tabCards: return "名刺"
+            case .searchPlaceholder: return "名前・会社・メールで検索"
+            case .filterAll: return "すべて"
+            case .filterNeedsReview: return "要確認"
+            case .filterCompany: return "会社"
+            case .filterTimeZone: return "時間帯"
+            case .allCompanies: return "すべての会社"
+            case .allTimeZones: return "すべての時間帯"
+            case .groupThisWeek: return "今週"
+            case .groupEarlier: return "それ以前"
+            case .countSuffix: return "%d件"
+            case .localTime: return "現地 %@"
+            case .sortTitle: return "並び替え"
+            case .sortNewest: return "新しい順"
+            case .sortName: return "名前順"
+            case .sortCompany: return "会社順"
             }
             
         case .english, .system:
@@ -138,6 +168,23 @@ struct L10n {
             case .exportCSV: return "Export CSV"
             case .needsReview: return "Needs review"
             case .rawValue: return "Raw value"
+
+            case .tabCards: return "Cards"
+            case .searchPlaceholder: return "Search name, company, email"
+            case .filterAll: return "All"
+            case .filterNeedsReview: return "Needs review"
+            case .filterCompany: return "Company"
+            case .filterTimeZone: return "Time zone"
+            case .allCompanies: return "All companies"
+            case .allTimeZones: return "All time zones"
+            case .groupThisWeek: return "This week"
+            case .groupEarlier: return "Earlier"
+            case .countSuffix: return "%d"
+            case .localTime: return "Local %@"
+            case .sortTitle: return "Sort"
+            case .sortNewest: return "Newest first"
+            case .sortName: return "By name"
+            case .sortCompany: return "By company"
             }
         }
     }
