@@ -6,8 +6,6 @@ import SwiftUI
 @Observable
 final class CardStore {
     var cards: [BusinessCard] = []
-    /// Legacy selection used by the old list screen; removed with it.
-    var selectedIndex: Int? = nil
     private(set) var undoState: UndoState? = nil
     private var undoToken: UUID? = nil
 
@@ -26,7 +24,6 @@ final class CardStore {
 
     struct UndoState {
         let cards: [BusinessCard]
-        let selectedIndex: Int?
         let operation: UndoOperation
     }
 
@@ -48,34 +45,10 @@ final class CardStore {
         cards.first { $0.id == id }
     }
 
-    var selectedCard: BusinessCard? {
-        guard let idx = selectedIndex, cards.indices.contains(idx) else { return nil }
-        return cards[idx]
-    }
-
-    var hasSelection: Bool { selectedCard != nil }
-
-    // Returns a Binding suitable for EditCardView; saves and re-resolves timezone on each write.
-    func binding(at index: Int) -> Binding<BusinessCard> {
-        Binding(
-            get: { [weak self] in
-                guard let self, self.cards.indices.contains(index) else { return BusinessCard() }
-                return self.cards[index]
-            },
-            set: { [weak self] newValue in
-                guard let self, self.cards.indices.contains(index) else { return }
-                self.cards[index] = newValue
-                self.save()
-                self.resolveTimeZonesAsync(for: [newValue])
-            }
-        )
-    }
-
     // MARK: - Writing
 
     func append(_ card: BusinessCard) {
         cards.append(card)
-        selectedIndex = cards.count - 1
         save()
         resolveTimeZonesAsync(for: [card])
     }
@@ -94,36 +67,13 @@ final class CardStore {
         save()
     }
 
-    func select(at index: Int) {
-        guard cards.indices.contains(index) else { return }
-        selectedIndex = index
-        save()
-    }
-
     // MARK: - Deleting (each kind can be undone for 6 seconds)
-
-    func deleteSelected() {
-        guard let idx = selectedIndex, cards.indices.contains(idx) else { return }
-        delete(at: idx)
-    }
-
-    func delete(at index: Int) {
-        guard cards.indices.contains(index) else { return }
-        saveUndo(operation: .deleteSingle)
-        cards.remove(at: index)
-        if let sel = selectedIndex {
-            if sel == index {
-                selectedIndex = cards.isEmpty ? nil : min(index, cards.count - 1)
-            } else if sel > index {
-                selectedIndex = sel - 1
-            }
-        }
-        save()
-    }
 
     func delete(id: UUID) {
         guard let idx = cards.firstIndex(where: { $0.id == id }) else { return }
-        delete(at: idx)
+        saveUndo(operation: .deleteSingle)
+        cards.remove(at: idx)
+        save()
     }
 
     func delete(ids: Set<UUID>) {
@@ -131,7 +81,6 @@ final class CardStore {
         guard count > 0 else { return }
         saveUndo(operation: .deleteMany(count))
         cards.removeAll { ids.contains($0.id) }
-        selectedIndex = cards.isEmpty ? nil : 0
         save()
     }
 
@@ -139,14 +88,12 @@ final class CardStore {
         guard !cards.isEmpty else { return }
         saveUndo(operation: .deleteAll)
         cards.removeAll()
-        selectedIndex = nil
         save()
     }
 
     func restoreUndo() {
         guard let snapshot = undoState else { return }
         cards = snapshot.cards
-        selectedIndex = snapshot.selectedIndex
         undoState = nil
         undoToken = nil
         save()
@@ -155,7 +102,7 @@ final class CardStore {
     // MARK: - Private
 
     private func saveUndo(operation: UndoOperation) {
-        undoState = UndoState(cards: cards, selectedIndex: selectedIndex, operation: operation)
+        undoState = UndoState(cards: cards, operation: operation)
         let token = UUID()
         undoToken = token
         Task { [weak self] in
@@ -199,11 +146,6 @@ final class CardStore {
                                  userInfo: [NSLocalizedDescriptionKey: "state version \(version) is newer than supported \(PersistedState.currentVersion)"])
             }
             cards = state.cards
-            if let idx = state.selectedIndex, cards.indices.contains(idx) {
-                selectedIndex = idx
-            } else {
-                selectedIndex = cards.isEmpty ? nil : 0
-            }
         } catch {
             // Do not let a subsequent save() overwrite data we could not read:
             // move the file aside so it survives, then start with an empty list.

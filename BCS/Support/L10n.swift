@@ -4,8 +4,7 @@ struct L10n {
     enum Key: String {
         case title
         case scan, edit
-        case deleteSelected, resetAllCards
-        case deleteSelectedTitle, deleteSelectedMessage
+
         case resetAllTitle, resetAllMessage
         case deleteAction, resetAction
         case undo, undoDeletedMessage, undoResetMessage, emptyCardsMessage
@@ -13,19 +12,18 @@ struct L10n {
         
         case name, company, phone, email, address
         
-        case tabScanner, tabSettings
+        case tabSettings
         case settingsTitle, language
         case system, japanese, english
         
         case addPhone
-        case clearAll
+
         case cancel, save
         case ok
 
         case scanEmptyTitle, scanEmptyMessage
         case scanFailedTitle, scanFailedMessage
 
-        case exportCSV
         case needsReview, rawValue
 
         // Card list (01)
@@ -53,7 +51,7 @@ struct L10n {
 
         // Scan result (06) and scan entry
         case scanResultTitle, readFieldsCount, tapToFix, bannerNormalizedPhone, bannerMissing
-        case retake, saveCard, scanWithCamera, scanFromPhoto, tzFromZipShort, tzFromAreaCodeShort, photoLoadFailed
+        case retake, saveCard, scanWithCamera, scanFromPhoto, tzFromZipShort, tzFromAreaCodeShort
 
         // Settings (07)
         case sectionDisplay, sectionData, sectionDeveloper, exportCSVTitle, cardsCount, deleteAllCards
@@ -78,10 +76,6 @@ struct L10n {
             case .title: return "名刺スキャナー"
             case .scan: return "スキャン"
             case .edit: return "編集"
-            case .deleteSelected: return "選択を削除"
-            case .resetAllCards: return "全削除"
-            case .deleteSelectedTitle: return "選択した名刺を削除しますか？"
-            case .deleteSelectedMessage: return "削除後 6 秒以内なら「取り消す」で復元できます。"
             case .resetAllTitle: return "すべての名刺を削除しますか？"
             case .resetAllMessage: return "削除後 6 秒以内なら「取り消す」で復元できます。"
             case .deleteAction: return "削除"
@@ -98,7 +92,6 @@ struct L10n {
             case .email: return "メール"
             case .address: return "住所"
                 
-            case .tabScanner: return "スキャナー"
             case .tabSettings: return "設定"
                 
             case .settingsTitle: return "設定"
@@ -108,7 +101,6 @@ struct L10n {
             case .english: return "英語"
                 
             case .addPhone: return "電話を追加"
-            case .clearAll: return "全消去"
                 
             case .cancel: return "キャンセル"
             case .save: return "保存"
@@ -119,7 +111,6 @@ struct L10n {
             case .scanFailedTitle: return "スキャンに失敗しました"
             case .scanFailedMessage: return "もう一度お試しください。"
 
-            case .exportCSV: return "CSV出力"
             case .needsReview: return "要確認"
             case .rawValue: return "読み取り元"
 
@@ -193,7 +184,6 @@ struct L10n {
             case .scanFromPhoto: return "写真から"
             case .tzFromZipShort: return "郵便番号 %@ からタイムゾーンを判定"
             case .tzFromAreaCodeShort: return "市外局番 %@ からタイムゾーンを判定"
-            case .photoLoadFailed: return "画像を読み込めませんでした"
 
             case .sectionDisplay: return "表示"
             case .sectionData: return "データ"
@@ -208,10 +198,6 @@ struct L10n {
             case .title: return "Business Card Scanner"
             case .scan: return "Scan"
             case .edit: return "Edit"
-            case .deleteSelected: return "Delete Selected"
-            case .resetAllCards: return "Clear All"
-            case .deleteSelectedTitle: return "Delete selected card?"
-            case .deleteSelectedMessage: return "You can undo this for 6 seconds after deleting."
             case .resetAllTitle: return "Delete all cards?"
             case .resetAllMessage: return "You can undo this for 6 seconds after deleting."
             case .deleteAction: return "Delete"
@@ -228,7 +214,6 @@ struct L10n {
             case .email: return "Email"
             case .address: return "Address"
                 
-            case .tabScanner: return "Scanner"
             case .tabSettings: return "Settings"
                 
             case .settingsTitle: return "Settings"
@@ -238,7 +223,6 @@ struct L10n {
             case .english: return "English"
                 
             case .addPhone: return "Add Phone"
-            case .clearAll: return "Clear All"
                 
             case .cancel: return "Cancel"
             case .save: return "Save"
@@ -249,7 +233,6 @@ struct L10n {
             case .scanFailedTitle: return "Scan failed"
             case .scanFailedMessage: return "Please try again."
 
-            case .exportCSV: return "Export CSV"
             case .needsReview: return "Needs review"
             case .rawValue: return "Raw value"
 
@@ -323,7 +306,6 @@ struct L10n {
             case .scanFromPhoto: return "From photo"
             case .tzFromZipShort: return "Time zone from ZIP %@"
             case .tzFromAreaCodeShort: return "Time zone from area code %@"
-            case .photoLoadFailed: return "Could not load the image"
 
             case .sectionDisplay: return "Display"
             case .sectionData: return "Data"
