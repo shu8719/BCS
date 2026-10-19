@@ -8,8 +8,6 @@ struct CardListView: View {
     @State private var query = CardListQuery()
     @State private var isSelecting = false
     @State private var selected: Set<UUID> = []
-    @State private var showSortDialog = false
-    @State private var showZoneDialog = false
     @State private var confirmDeleteSelected = false
     @State private var exportItem: ExportItem?
     
@@ -78,17 +76,6 @@ struct CardListView: View {
             .animation(.easeInOut(duration: 0.2), value: store.undoState != nil)
             .navigationDestination(for: UUID.self) { id in
                 CardDetailView(cardID: id)
-            }
-            .confirmationDialog(L10n.t(.sortTitle, lang: lang), isPresented: $showSortDialog, titleVisibility: .visible) {
-                Button(L10n.t(.sortNewest, lang: lang)) { query.sort = .scannedAtDesc }
-                Button(L10n.t(.sortName, lang: lang)) { query.sort = .nameAsc }
-                Button(L10n.t(.sortCompany, lang: lang)) { query.sort = .companyAsc }
-            }
-            .confirmationDialog(L10n.t(.filterTimeZone, lang: lang), isPresented: $showZoneDialog, titleVisibility: .visible) {
-                Button(L10n.t(.allTimeZones, lang: lang)) { query.zone = nil }
-                ForEach(USTimeZone.allCases, id: \.self) { zone in
-                    Button(zone.rawValue) { query.zone = zone }
-                }
             }
             .scanFlowPresentation(flow)
         }
@@ -166,7 +153,7 @@ struct CardListView: View {
         HStack(spacing: 0) {
             BrandWordmark()
             Spacer(minLength: 10)
-            IconButton(.sort) { showSortDialog = true }
+            sortMenu
             IconButton(.checklist) { fabMenuOpen = false; isSelecting = true }
         }
         .padding(.leading, 16)
@@ -187,12 +174,56 @@ struct CardListView: View {
                            selected: query.needsReviewOnly, tint: .warning) {
                     query.needsReviewOnly.toggle()
                 }
-                FilterChip(query.zone?.rawValue ?? L10n.t(.filterTimeZone, lang: lang), trailing: .expandMore,
-                           selected: query.zone != nil) {
-                    showZoneDialog = true
-                }
+                zoneMenu
             }
             .padding(.horizontal, 16)
+        }
+    }
+    
+    // MARK: - Menus (Figma 17-684 / 17-605, rendered with the system Menu)
+    
+    /// Sort order; the Picker inside the Menu puts a check on the current choice.
+    private var sortMenu: some View {
+        Menu {
+            Picker("", selection: $query.sort) {
+                Text(L10n.t(.sortNewest, lang: lang)).tag(CardSort.scannedAtDesc)
+                Text(L10n.t(.sortOldest, lang: lang)).tag(CardSort.scannedAtAsc)
+                Text(L10n.t(.sortName, lang: lang)).tag(CardSort.nameAsc)
+                Text(L10n.t(.sortCompany, lang: lang)).tag(CardSort.companyAsc)
+            }
+        } label: {
+            IconView(.sort, size: 24, color: M3.onSurface)
+                .frame(width: 48, height: 48)
+                .contentShape(Rectangle())
+        }
+    }
+    
+    /// Time zone filter with a card count per zone (counts cover every card, not the current filter).
+    private var zoneMenu: some View {
+        Menu {
+            Picker("", selection: $query.zone) {
+                Text(L10n.t(.allTimeZones, lang: lang))
+                Text("\(store.cards.count)")
+                    .tag(USTimeZone?.none)
+                ForEach(USTimeZone.allCases, id: \.self) { zone in
+                    let count = store.cards.filter { $0.timeZone == zone }.count
+                    Text("\(zoneName(zone)) (\(zone.rawValue))")
+                    Text("\(count)")
+                        .tag(USTimeZone?.some(zone))
+                }
+            }
+        } label: {
+            FilterChipLabel(query.zone?.rawValue ?? L10n.t(.filterTimeZone, lang: lang),
+                            trailing: .expandMore, selected: query.zone != nil)
+        }
+    }
+    
+    private func zoneName(_ zone: USTimeZone) -> String {
+        switch zone {
+        case .est: return L10n.t(.tzShortEST, lang: lang)
+        case .cst: return L10n.t(.tzShortCST, lang: lang)
+        case .mst: return L10n.t(.tzShortMST, lang: lang)
+        case .pst: return L10n.t(.tzShortPST, lang: lang)
         }
     }
     

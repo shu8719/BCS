@@ -31,7 +31,8 @@ struct L10n {
         case filterAll, filterNeedsReview, filterTimeZone
         case allTimeZones
         case groupThisWeek, groupEarlier, countSuffix, localTime
-        case sortTitle, sortNewest, sortName, sortCompany
+        case sortTitle, sortNewest, sortOldest, sortName, sortCompany
+        case tzShortEST, tzShortCST, tzShortMST, tzShortPST
 
         // Selection mode (02)
         case selectedCount, tapToToggle, selectAll, exportSelectedCSV, undoDeletedManyMessage, deleteCountTitle
@@ -123,6 +124,11 @@ struct L10n {
             case .localTime: return "現地 %@"
             case .sortTitle: return "並び替え"
             case .sortNewest: return "新しい順"
+            case .sortOldest: return "古い順"
+            case .tzShortEST: return "東部"
+            case .tzShortCST: return "中部"
+            case .tzShortMST: return "山岳部"
+            case .tzShortPST: return "太平洋"
             case .sortName: return "名前順"
             case .sortCompany: return "会社順"
 
@@ -242,6 +248,11 @@ struct L10n {
             case .localTime: return "Local %@"
             case .sortTitle: return "Sort"
             case .sortNewest: return "Newest first"
+            case .sortOldest: return "Oldest first"
+            case .tzShortEST: return "Eastern"
+            case .tzShortCST: return "Central"
+            case .tzShortMST: return "Mountain"
+            case .tzShortPST: return "Pacific"
             case .sortName: return "By name"
             case .sortCompany: return "By company"
 

@@ -62,6 +62,8 @@ final class CardListFilterTests: XCTestCase {
         let older = card("Old", scannedAt: date("2026-01-01T00:00:00Z"))
         let newer = card("New", scannedAt: date("2026-10-01T00:00:00Z"))
         XCTAssertEqual(CardListFilter.apply(q, to: [older, newer]).map(\.name.value), ["New", "Old"])
+        q.sort = .scannedAtAsc
+        XCTAssertEqual(CardListFilter.apply(q, to: [newer, older]).map(\.name.value), ["Old", "New"])
     }
 
     func testGroupsByMondayStartOfWeek() {

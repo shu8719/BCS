@@ -25,6 +25,31 @@ struct FilterChip: View {
     
     var body: some View {
         Button(action: action) {
+            FilterChipLabel(label, leading: leading, trailing: trailing, selected: selected, tint: tint)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// The chip's appearance without a Button, so it can also serve as a `Menu` label.
+struct FilterChipLabel: View {
+    let label: String
+    var leading: BCSIcon? = nil
+    var trailing: BCSIcon? = nil
+    var selected: Bool = false
+    var tint: FilterChipTint = .secondary
+    
+    init(_ label: String, leading: BCSIcon? = nil, trailing: BCSIcon? = nil, selected: Bool = false,
+         tint: FilterChipTint = .secondary) {
+        self.label = label
+        self.leading = leading
+        self.trailing = trailing
+        self.selected = selected
+        self.tint = tint
+    }
+    
+    var body: some View {
+        Group {
             HStack(spacing: 4) {
                 if let leading {
                     IconView(leading, size: 18, color: foreground)
@@ -48,7 +73,6 @@ struct FilterChip: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
-        .buttonStyle(.plain)
     }
     
     private var fill: Color {

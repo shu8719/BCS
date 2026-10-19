@@ -1,7 +1,7 @@
 import Foundation
 
 enum CardSort: CaseIterable {
-    case scannedAtDesc, nameAsc, companyAsc
+    case scannedAtDesc, scannedAtAsc, nameAsc, companyAsc
 }
 
 enum CardGroup: Equatable {
@@ -34,6 +34,9 @@ enum CardListFilter {
             switch query.sort {
             case .scannedAtDesc:
                 if a.scannedAt != b.scannedAt { return a.scannedAt > b.scannedAt }
+                return a.name.value.localizedCaseInsensitiveCompare(b.name.value) == .orderedAscending
+            case .scannedAtAsc:
+                if a.scannedAt != b.scannedAt { return a.scannedAt < b.scannedAt }
                 return a.name.value.localizedCaseInsensitiveCompare(b.name.value) == .orderedAscending
             case .nameAsc:
                 return a.name.value.localizedCaseInsensitiveCompare(b.name.value) == .orderedAscending
