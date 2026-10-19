@@ -28,8 +28,8 @@ struct L10n {
         // Card list (01)
         case tabCards
         case searchPlaceholder
-        case filterAll, filterNeedsReview, filterCompany, filterTimeZone
-        case allCompanies, allTimeZones
+        case filterAll, filterNeedsReview, filterTimeZone
+        case allTimeZones
         case groupThisWeek, groupEarlier, countSuffix, localTime
         case sortTitle, sortNewest, sortName, sortCompany
 
@@ -115,9 +115,7 @@ struct L10n {
             case .searchPlaceholder: return "名前・会社・メールで検索"
             case .filterAll: return "すべて"
             case .filterNeedsReview: return "要確認"
-            case .filterCompany: return "会社"
             case .filterTimeZone: return "時間帯"
-            case .allCompanies: return "すべての会社"
             case .allTimeZones: return "すべての時間帯"
             case .groupThisWeek: return "今週"
             case .groupEarlier: return "それ以前"
@@ -236,9 +234,7 @@ struct L10n {
             case .searchPlaceholder: return "Search name, company, email"
             case .filterAll: return "All"
             case .filterNeedsReview: return "Needs review"
-            case .filterCompany: return "Company"
             case .filterTimeZone: return "Time zone"
-            case .allCompanies: return "All companies"
             case .allTimeZones: return "All time zones"
             case .groupThisWeek: return "This week"
             case .groupEarlier: return "Earlier"

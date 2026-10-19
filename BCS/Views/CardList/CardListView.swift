@@ -9,7 +9,6 @@ struct CardListView: View {
     @State private var isSelecting = false
     @State private var selected: Set<UUID> = []
     @State private var showSortDialog = false
-    @State private var showCompanyDialog = false
     @State private var showZoneDialog = false
     @State private var confirmDeleteSelected = false
     @State private var exportItem: ExportItem?
@@ -79,12 +78,6 @@ struct CardListView: View {
                 Button(L10n.t(.sortNewest, lang: lang)) { query.sort = .scannedAtDesc }
                 Button(L10n.t(.sortName, lang: lang)) { query.sort = .nameAsc }
                 Button(L10n.t(.sortCompany, lang: lang)) { query.sort = .companyAsc }
-            }
-            .confirmationDialog(L10n.t(.filterCompany, lang: lang), isPresented: $showCompanyDialog, titleVisibility: .visible) {
-                Button(L10n.t(.allCompanies, lang: lang)) { query.company = nil }
-                ForEach(CardListFilter.companies(in: store.cards), id: \.self) { company in
-                    Button(company) { query.company = company }
-                }
             }
             .confirmationDialog(L10n.t(.filterTimeZone, lang: lang), isPresented: $showZoneDialog, titleVisibility: .visible) {
                 Button(L10n.t(.allTimeZones, lang: lang)) { query.zone = nil }
@@ -192,10 +185,6 @@ struct CardListView: View {
                 FilterChip("\(L10n.t(.filterNeedsReview, lang: lang)) \(review)", leading: .warning,
                            selected: query.needsReviewOnly, tint: .warning) {
                     query.needsReviewOnly.toggle()
-                }
-                FilterChip(query.company ?? L10n.t(.filterCompany, lang: lang), trailing: .expandMore,
-                           selected: query.company != nil) {
-                    showCompanyDialog = true
                 }
                 FilterChip(query.zone?.rawValue ?? L10n.t(.filterTimeZone, lang: lang), trailing: .expandMore,
                            selected: query.zone != nil) {
