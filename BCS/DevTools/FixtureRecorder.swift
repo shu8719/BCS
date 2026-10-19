@@ -22,7 +22,7 @@ final class FixtureRecorder {
     
     func makeFixture(source: CardFixture.Source) -> CardFixture? {
         guard let card = lastCard else { return nil }
-        let timeZoneCode = TimeZoneResolver.resolve(for: card)?.meta.code
+        let timeZoneCode = TimeZoneResolver.resolve(for: card)?.zone?.rawValue
         return CardFixture(name: Self.fixtureName(for: card, source: source),
                            source: source, items: lastItems, card: card, timeZoneCode: timeZoneCode)
     }

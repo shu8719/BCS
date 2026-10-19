@@ -172,6 +172,25 @@ final class CardStore {
         }
     }
 
+    /// Writes a resolution into the card, including the ZIP/area-code conflict review flag.
+    static func apply(_ resolution: TimeZoneResolution?, to card: inout BusinessCard) {
+        if let r = resolution {
+            card.timeZone = r.zone
+            card.timeZoneId = r.identifier
+            card.timeZoneSource = r.source
+            if r.conflict, card.address.reviewReason == nil {
+                card.address.reviewReason = .timeZoneConflict
+            } else if !r.conflict, card.address.reviewReason == .timeZoneConflict {
+                card.address.reviewReason = nil
+            }
+        } else {
+            card.timeZone = nil
+            card.timeZoneId = ""
+            card.timeZoneSource = nil
+            if card.address.reviewReason == .timeZoneConflict { card.address.reviewReason = nil }
+        }
+    }
+
     private func resolveTimeZonesAsync(for snapshot: [BusinessCard]) {
         guard !snapshot.isEmpty else { return }
         Task {
@@ -180,9 +199,7 @@ final class CardStore {
             }.value
             for update in updates {
                 guard let idx = self.cards.firstIndex(where: { $0.id == update.cardID }) else { continue }
-                self.cards[idx].timeZone = USTimeZone(rawValue: update.code)
-                self.cards[idx].timeZoneId = update.identifier
-                self.cards[idx].timeZoneSource = TimeZoneSource(legacySourceKey: update.sourceKey)
+                Self.apply(update.resolution, to: &self.cards[idx])
             }
             if !updates.isEmpty { self.save() }
         }

@@ -1,15 +1,18 @@
 import Foundation
 
-struct TimeZoneMeta {
-    let identifier: String
-    let code: String?
+/// Outcome of resolving one card.
+struct TimeZoneResolution: Equatable {
+    let identifier: String        // IANA identifier
+    let zone: USTimeZone?         // nil when the zone is outside PST/MST/CST/EST (e.g. Alaska)
+    let source: TimeZoneSource    // .zip or .areaCode
+    /// Both the ZIP and the area code resolved, to different zones (spec §4 rule 3).
+    let conflict: Bool
 }
 
 struct TimeZoneUpdate {
     let cardID: UUID
-    let code: String
-    let identifier: String
-    let sourceKey: String
+    /// nil means "clear the card's time zone" (the address no longer resolves).
+    let resolution: TimeZoneResolution?
 }
 
 /// Maps a US business card to PST / MST / CST / EST using the ZIP (preferred) or the phone area code.
@@ -30,37 +33,50 @@ struct TimeZoneResolver {
         TimeZoneResolver().resolveUpdates(for: cards)
     }
 
-    static func resolve(for card: BusinessCard) -> (meta: TimeZoneMeta, sourceKey: String)? {
+    static func resolve(for card: BusinessCard) -> TimeZoneResolution? {
         TimeZoneResolver().resolve(for: card)
     }
 
     // MARK: - Resolution
 
-    /// Batch-resolves all cards that need a timezone update.
+    /// Batch-resolves all cards whose time zone is missing, stale, or came from a different source.
     func resolveUpdates(for cards: [BusinessCard]) -> [TimeZoneUpdate] {
         cards.compactMap { card in
-            guard let (meta, sourceKey) = resolve(for: card) else {
+            guard let resolution = resolve(for: card) else {
                 // No longer resolvable (e.g. address edited to a non-US one):
                 // clear any stale timezone instead of leaving the old badge in place.
                 let hasStale = !card.timeZoneId.isEmpty || card.timeZone != nil || card.timeZoneSource != nil
-                return hasStale ? TimeZoneUpdate(cardID: card.id, code: "", identifier: "", sourceKey: "") : nil
+                return hasStale ? TimeZoneUpdate(cardID: card.id, resolution: nil) : nil
             }
-            guard card.timeZoneId.isEmpty || card.timeZoneSource != TimeZoneSource(legacySourceKey: sourceKey) else { return nil }
-            return TimeZoneUpdate(cardID: card.id, code: meta.code ?? "", identifier: meta.identifier, sourceKey: sourceKey)
+            if card.timeZoneId == resolution.identifier && card.timeZoneSource == resolution.source {
+                return nil
+            }
+            return TimeZoneUpdate(cardID: card.id, resolution: resolution)
         }
     }
 
-    func resolve(for card: BusinessCard) -> (meta: TimeZoneMeta, sourceKey: String)? {
+    /// ZIP wins; the area code is a fallback and a cross-check.
+    func resolve(for card: BusinessCard) -> TimeZoneResolution? {
         let addr = card.address.value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !addr.isEmpty, Self.looksLikeUSAddress(addr, phones: card.phones) else { return nil }
 
-        if let zip = Self.extractUSZip(from: addr), let tzId = zipDB.timeZoneIdentifier(for: zip) {
-            return (TimeZoneMeta(identifier: tzId, code: Self.code(forTimeZoneIdentifier: tzId)), zip)
+        let fromZip: (id: String, source: TimeZoneSource)? = {
+            guard let zip = Self.extractUSZip(from: addr), let id = zipDB.timeZoneIdentifier(for: zip) else { return nil }
+            return (id, .zip(zip))
+        }()
+        let fromArea: (id: String, source: TimeZoneSource)? = {
+            guard let area = Self.extractUSAreaCode(from: card.phones), let id = areaDB.timeZoneIdentifier(for: area) else { return nil }
+            return (id, .areaCode(area))
+        }()
+        guard let primary = fromZip ?? fromArea else { return nil }
+
+        var conflict = false
+        if let z = fromZip, let a = fromArea,
+           let zc = Self.code(forTimeZoneIdentifier: z.id), let ac = Self.code(forTimeZoneIdentifier: a.id) {
+            conflict = zc != ac
         }
-        if let area = Self.extractUSAreaCode(from: card.phones), let tzId = areaDB.timeZoneIdentifier(for: area) {
-            return (TimeZoneMeta(identifier: tzId, code: Self.code(forTimeZoneIdentifier: tzId)), "AC:\(area)")
-        }
-        return nil
+        let zone = Self.code(forTimeZoneIdentifier: primary.id).flatMap(USTimeZone.init(rawValue:))
+        return TimeZoneResolution(identifier: primary.id, zone: zone, source: primary.source, conflict: conflict)
     }
 
     // MARK: - US detection

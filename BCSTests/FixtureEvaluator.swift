@@ -77,7 +77,7 @@ struct FixtureEvaluator {
                   actual: card.phones.map(\.number).joined(separator: " / "),
                   normalize: Self.phoneDigitSet)
             if let resolver {
-                let actual = resolver.resolve(for: card)?.meta.code ?? ""
+                let actual = resolver.resolve(for: card)?.zone?.rawValue ?? ""
                 check(.timeZone, fixture: fixture.name, expected: e.timeZoneCode, actual: actual,
                       normalize: { $0.trimmingCharacters(in: .whitespaces).uppercased() })
             }

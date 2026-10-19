@@ -29,12 +29,12 @@ enum M3 {
     static let success                 = Color("success")
     static let successContainer        = Color("success-container")
     
-    /// Chip background for a US time zone code ("EST" / "CST" / "MST" / "PST").
-    static func tzContainer(_ code: String) -> Color {
-        Color("tz-\(code.lowercased())-container")
+    /// Chip background / foreground for a US time zone.
+    static func tzContainer(_ zone: USTimeZone) -> Color {
+        Color("tz-\(zone.rawValue.lowercased())-container")
     }
     
-    static func tzOnContainer(_ code: String) -> Color {
-        Color("tz-on-\(code.lowercased())-container")
+    static func tzOnContainer(_ zone: USTimeZone) -> Color {
+        Color("tz-on-\(zone.rawValue.lowercased())-container")
     }
 }
