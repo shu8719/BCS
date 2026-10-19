@@ -17,6 +17,25 @@ final class AddressParserTests: XCTestCase {
         XCTAssertTrue(parser.looksLikeAddressLine("12889 Lakeside Drive"))
     }
 
+    func testGarbledLinesAreNotAddresses() {
+        XCTAssertFalse(parser.looksLikeAddressLine("1≥PÑ 4100"))
+        XCTAssertFalse(parser.looksLikeAddressLine("|||| 4100 ^^"))
+        XCTAssertTrue(parser.looksLikeAddressLine("4100 Lakeline Blvd, Suite 210"))   // ordinary punctuation is fine
+        XCTAssertTrue(parser.looksLikeAddressLine("Calle Peñón 12, Nuñez"))            // accented letters are fine
+    }
+
+    func testGarbledLineIsSkippedAndTheRealAddressKept() {
+        let lines = [
+            ocrLine("1≥PÑ 4100",               y: 0.29),
+            ocrLine("Lakeline Blvd, Suite 210", y: 0.25),
+            ocrLine("Austin, TX 78717",         y: 0.21),
+        ]
+        let text = parser.pickAddressBlockInfo(from: lines).text
+        XCTAssertFalse(text.contains("≥"), text)
+        XCTAssertTrue(text.contains("Lakeline Blvd"), text)
+        XCTAssertTrue(text.contains("TX 78717"), text)
+    }
+
     func testContactLinesAreNotAddresses() {
         XCTAssertFalse(parser.looksLikeAddressLine("Tel: 408-555-1234"))
         XCTAssertFalse(parser.looksLikeAddressLine("Email: john@example.com"))

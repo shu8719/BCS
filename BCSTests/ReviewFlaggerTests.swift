@@ -48,13 +48,14 @@ final class ReviewFlaggerTests: XCTestCase {
         XCTAssertFalse(card.phones[0].field.needsReview)
     }
 
-    func testEmptyNameAndCompanyAreFlaggedMissing() {
+    func testEmptyNameCompanyAndAddressAreFlaggedMissing() {
         var card = BusinessCard()
         ReviewFlagger.apply(to: &card)
         XCTAssertEqual(card.name.reviewReason, .missing)
         XCTAssertEqual(card.company.reviewReason, .missing)
-        XCTAssertNil(card.email.reviewReason)
-        XCTAssertEqual(card.reviewCount, 2)
+        XCTAssertEqual(card.address.reviewReason, .missing)
+        XCTAssertNil(card.email.reviewReason)    // e-mail is optional on a card
+        XCTAssertEqual(card.reviewCount, 3)
     }
 
     func testParserAppliesFlags() {

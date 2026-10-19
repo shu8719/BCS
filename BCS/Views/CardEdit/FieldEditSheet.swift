@@ -21,8 +21,7 @@ struct FieldEditSheet: View {
     }
     
     var body: some View {
-        ZStack {
-            M3.surface.ignoresSafeArea()
+        Group {
             VStack(spacing: 20) {
                 HStack(spacing: 4) {
                     IconButton(.close) { dismiss() }
@@ -43,6 +42,7 @@ struct FieldEditSheet: View {
                 Spacer()
             }
         }
+        .background(M3.surface.ignoresSafeArea())
         .presentationDetents([.medium])
     }
 }

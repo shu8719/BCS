@@ -98,6 +98,8 @@ final class PhoneParser {
         return (clean, phones)
     }
     
+    /// Collapses the same number read several times ("+1 512 555 0187", "C 512-555-0187", "(512) 555-0187")
+    /// into one entry, keeping the one that carries a label.
     func dedupePhones(_ phones: [LabeledNumber]) -> [LabeledNumber] {
         var indexByDigits: [String: Int] = [:]
         var out: [LabeledNumber] = []
@@ -107,16 +109,16 @@ final class PhoneParser {
         }
         
         for phone in phones {
-            let digits = phoneDigits(phone.number)
+            let digits = canonicalDigits(phone.number)
             guard !digits.isEmpty else { continue }
             
             if let idx = indexByDigits[digits] {
-                let existing = out[idx].number
-                let newHas = hasLabel(phone.number)
-                let oldHas = hasLabel(existing)
-                if newHas && !oldHas {
+                let existing = out[idx]
+                let newLabeled = phone.label != .unknown || hasLabel(phone.number)
+                let oldLabeled = existing.label != .unknown || hasLabel(existing.number)
+                if newLabeled && !oldLabeled {
                     out[idx] = phone
-                } else if newHas == oldHas && phone.number.count > existing.count {
+                } else if newLabeled == oldLabeled && phone.number.count > existing.number.count {
                     out[idx] = phone
                 }
             } else {
@@ -126,6 +128,12 @@ final class PhoneParser {
         }
         
         return out
+    }
+    
+    /// Digits with a leading US country code removed, so "+1 512…" and "512…" compare equal.
+    private func canonicalDigits(_ s: String) -> String {
+        let digits = phoneDigits(s)
+        return (digits.count == 11 && digits.hasPrefix("1")) ? String(digits.dropFirst()) : digits
     }
     
     private func extractPhonesFromText(_ text: String, allowMultiline: Bool) -> [DetectedPhone] {
@@ -250,7 +258,7 @@ final class PhoneParser {
         var seen = Set<String>()
         var deduped: [(NSRange, String)] = []
         for item in out.sorted(by: { $0.0.location < $1.0.location }) {
-            let key = phoneDigits(item.1)
+            let key = canonicalDigits(item.1)
             if seen.contains(key) { continue }
             seen.insert(key)
             deduped.append(item)

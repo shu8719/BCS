@@ -55,6 +55,24 @@ final class PhoneParserTests: XCTestCase {
         XCTAssertEqual(parser.extractPhones(from: [ocrLine("Office: 407.555.0162", y: 0.4)]).first?.label, .main)
     }
 
+    func testDedupeIgnoresCountryCodeAndKeepsTheLabeledOne() {
+        let phones = parser.dedupePhones([
+            LabeledNumber(label: .unknown, number: "+1 512-555-0187"),
+            LabeledNumber(label: .mobile,  number: "M: 512-555-0187"),
+            LabeledNumber(label: .unknown, number: "(512) 555-0187"),
+        ])
+        XCTAssertEqual(phones.count, 1)
+        XCTAssertEqual(phones.first?.label, .mobile)
+    }
+
+    func testWholeCardDedupesAcrossLinesAndColumns() {
+        let lines = [ocrLine("C 512-555-0187", y: 0.5), ocrLine("+1 512 555 0187", y: 0.45),
+                     ocrLine("T 512-555-0142", y: 0.4), ocrLine("(512) 555-0142", y: 0.35)]
+        let card = CardParser().parse(items: lines.map { OCRItem(text: $0.text, box: $0.box) })
+        XCTAssertEqual(card.phones.count, 2)
+        XCTAssertEqual(card.phones.map(\.label), [.mobile, .main])
+    }
+
     func testDedupeKeepsLabeledVariant() {
         let phones = parser.dedupePhones([
             LabeledNumber(label: .unknown, number: "408-555-1234"),

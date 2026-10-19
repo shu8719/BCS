@@ -22,8 +22,7 @@ struct CardEditView: View {
     private var lang: AppSettings.Language { settings.language }
     
     var body: some View {
-        ZStack {
-            M3.surface.ignoresSafeArea()
+        Group {
             VStack(spacing: 0) {
                 topBar
                 ScrollView {
@@ -42,6 +41,7 @@ struct CardEditView: View {
                 .scrollDismissesKeyboard(.interactively)
             }
         }
+        .background(M3.surface.ignoresSafeArea())
         .confirmationDialog(L10n.t(.deleteThisCard, lang: lang), isPresented: $confirmDelete, titleVisibility: .visible) {
             Button(L10n.t(.deleteAction, lang: lang), role: .destructive) {
                 dismiss()

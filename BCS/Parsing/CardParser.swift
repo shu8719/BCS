@@ -8,8 +8,9 @@ final class CardParser {
     private let addressParser = AddressParser()
     private let nameParser = NameParser()
     
+    // OCR sometimes inserts spaces around "@" and before the TLD dot, or reads a full-width "＠".
     private static let emailRegex = try? NSRegularExpression(
-        pattern: #"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}"#,
+        pattern: #"[A-Z0-9._%+-]+\s*[@＠]\s*[A-Z0-9-]+(?:\s*\.\s*[A-Z0-9-]+)*\s*\.\s*[A-Z]{2,}"#,
         options: [.caseInsensitive]
     )
     
@@ -130,6 +131,8 @@ final class CardParser {
         let range = NSRange(location: 0, length: ns.length)
         guard let m = Self.emailRegex?.firstMatch(in: t, range: range) else { return nil }
         return ns.substring(with: m.range)
+            .replacingOccurrences(of: "＠", with: "@")
+            .filter { !$0.isWhitespace }
     }
     
     /// Company name, and whether it had to be guessed from the e-mail domain.

@@ -315,6 +315,7 @@ final class AddressParser {
         let lower = t.lowercased()
         
         if t.isEmpty { return false }
+        if isGarbledLine(t) { return false }
         if isAddressLabelOnly(t) { return false }
         if isPhoneContactLine(t) { return false }
         if isBarePhoneLine(t) { return false }
@@ -346,6 +347,7 @@ final class AddressParser {
         let lower = t.lowercased()
         
         if t.isEmpty { return false }
+        if isGarbledLine(t) { return false }
         if isPhoneContactLine(t) { return false }
         if isBarePhoneLine(t) { return false }
         if isStandaloneContactLabel(t) { return false }
@@ -367,6 +369,18 @@ final class AddressParser {
         if (2...4).contains(tokens) && hasLetters { return true }
         
         return false
+    }
+    
+    /// Characters an address line may contain besides letters, digits and spaces.
+    private static let addressPunctuation: Set<Character> = [
+        ",", ".", "#", "-", "–", "—", "/", "'", "’", "&", "(", ")", ":", ";", "°", "・", "、", "。", "〒", "番", "号"
+    ]
+    
+    /// "1≥PÑ 4100": OCR noise with symbols that never occur in an address.
+    func isGarbledLine(_ line: String) -> Bool {
+        line.contains { ch in
+            !(ch.isLetter || ch.isNumber || ch.isWhitespace || Self.addressPunctuation.contains(ch))
+        }
     }
     
     /// True for lines that are just a phone number (optionally with a bullet or a short label).

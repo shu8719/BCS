@@ -50,7 +50,8 @@ struct L10n {
         case tzAuto, tzUnknown, tzNameEST, tzNameCST, tzNameMST, tzNamePST, tzBasisZip, tzBasisAreaCode
 
         // Scan result (06) and scan entry
-        case scanResultTitle, readFieldsCount, tapToFix, bannerNormalizedPhone, bannerMissing, bannerMalformedPhone, bannerInferredCompany
+        case scanResultTitle, readFieldsCount, tapToFix, bannerNormalizedPhone, bannerMalformedPhone, bannerInferredCompany
+        case bannerMissingName, bannerMissingCompany, bannerMissingAddress
         case retake, saveCard, scanWithCamera, scanFromPhoto, tzFromZipShort, tzFromAreaCodeShort
 
         // Settings (07)
@@ -182,7 +183,9 @@ struct L10n {
             case .readFieldsCount: return "%d項目を読み取りました"
             case .tapToFix: return "タップで修正"
             case .bannerNormalizedPhone: return "電話番号「%@」を整形しました。保存前に確認してください。"
-            case .bannerMissing: return "名前または会社名を読み取れませんでした。"
+            case .bannerMissingName: return "名前を読み取れませんでした。保存前に入力してください。"
+            case .bannerMissingCompany: return "会社名を読み取れませんでした。保存前に入力してください。"
+            case .bannerMissingAddress: return "住所を読み取れませんでした。保存前に確認してください。"
             case .bannerMalformedPhone: return "電話番号「%@」の桁数が合いません。保存前に確認してください。"
             case .bannerInferredCompany: return "会社名をメールアドレスから推測しました。保存前に確認してください。"
             case .retake: return "撮り直す"
@@ -312,7 +315,9 @@ struct L10n {
             case .readFieldsCount: return "%d fields read"
             case .tapToFix: return "Tap to fix"
             case .bannerNormalizedPhone: return "Phone number “%@” was reformatted. Check it before saving."
-            case .bannerMissing: return "Name or company could not be read."
+            case .bannerMissingName: return "The name could not be read. Enter it before saving."
+            case .bannerMissingCompany: return "The company could not be read. Enter it before saving."
+            case .bannerMissingAddress: return "The address could not be read. Check it before saving."
             case .bannerMalformedPhone: return "Phone number “%@” has the wrong number of digits. Check it before saving."
             case .bannerInferredCompany: return "The company was inferred from the email address. Check it before saving."
             case .retake: return "Retake"

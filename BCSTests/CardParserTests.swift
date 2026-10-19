@@ -55,6 +55,12 @@ final class CardParserTests: XCTestCase {
         XCTAssertEqual(card.company.reviewReason, .inferred)
     }
 
+    func testEmailSurvivesOCRSpacesAroundAtAndDot() {
+        let items = [ocrItem("Taro Yamada", y: 0.7, height: 0.06),
+                     ocrItem("taro.yamada @ ridgelinerobotics. com", y: 0.3)]
+        XCTAssertEqual(CardParser().parse(items: items).email.value, "taro.yamada@ridgelinerobotics.com")
+    }
+
     func testReturnsEmptyCardForNoItems() {
         let card = CardParser().parse(items: [])
         XCTAssertEqual(card.name.value, "")

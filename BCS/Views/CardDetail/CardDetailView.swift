@@ -15,8 +15,7 @@ struct CardDetailView: View {
     private var lang: AppSettings.Language { settings.language }
     
     var body: some View {
-        ZStack {
-            M3.surfaceContainerLow.ignoresSafeArea()
+        Group {
             if let card = store.card(id: cardID) {
                 VStack(spacing: 0) {
                     topBar
@@ -35,6 +34,8 @@ struct CardDetailView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(M3.surfaceContainerLow.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $editDraft) { draft in
             CardEditView(card: draft,

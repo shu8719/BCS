@@ -21,8 +21,7 @@ struct SettingsView: View {
     private var lang: AppSettings.Language { settings.language }
     
     var body: some View {
-        ZStack {
-            M3.surfaceContainerLow.ignoresSafeArea()
+        Group {
             VStack(spacing: 0) {
                 Text(L10n.t(.settingsTitle, lang: lang))
                     .textStyle(.headlineMedium)
@@ -47,6 +46,7 @@ struct SettingsView: View {
                 }
             }
         }
+        .background(M3.surfaceContainerLow.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) {
             if let state = store.undoState {
                 UndoBar(operation: state.operation) { store.restoreUndo() }

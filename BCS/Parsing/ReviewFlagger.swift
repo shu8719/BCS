@@ -21,5 +21,6 @@ enum ReviewFlagger {
         }
         if card.name.value.isEmpty { card.name.reviewReason = .missing }
         if card.company.value.isEmpty { card.company.reviewReason = .missing }
+        if card.address.value.isEmpty { card.address.reviewReason = .missing }
     }
 }

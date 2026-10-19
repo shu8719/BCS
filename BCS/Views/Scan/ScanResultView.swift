@@ -29,9 +29,9 @@ struct ScanResultView: View {
     private var lang: AppSettings.Language { settings.language }
     
     var body: some View {
-        ZStack {
-            M3.surfaceContainerLow.ignoresSafeArea()
-            VStack(spacing: 0) {
+        // Background via .background so the content itself stays inside the safe area.
+        VStack(spacing: 0) {
+            Group {
                 topBar
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
@@ -50,6 +50,7 @@ struct ScanResultView: View {
                 bottomBar
             }
         }
+        .background(M3.surfaceContainerLow.ignoresSafeArea())
         .sheet(item: $editing) { target in
             FieldEditSheet(title: title(for: target), value: value(for: target),
                            multiline: isAddress(target), keyboard: keyboard(for: target)) { newValue in
@@ -91,9 +92,9 @@ struct ScanResultView: View {
         if card.company.reviewReason == .inferred {
             return L10n.t(.bannerInferredCompany, lang: lang)
         }
-        if card.name.reviewReason == .missing || card.company.reviewReason == .missing {
-            return L10n.t(.bannerMissing, lang: lang)
-        }
+        if card.name.reviewReason == .missing { return L10n.t(.bannerMissingName, lang: lang) }
+        if card.company.reviewReason == .missing { return L10n.t(.bannerMissingCompany, lang: lang) }
+        if card.address.reviewReason == .missing { return L10n.t(.bannerMissingAddress, lang: lang) }
         return nil
     }
     
@@ -107,9 +108,7 @@ struct ScanResultView: View {
             row(.name, icon: .person, label: L10n.t(.name, lang: lang), field: card.name)
             row(.company, icon: .business, label: L10n.t(.company, lang: lang), field: card.company)
             ForEach(card.phones) { phone in
-                row(.phone(phone.id), icon: .call,
-                    label: L10n.t(.phoneWithLabel, lang: lang, CardDetailText.phoneLabel(phone.label, lang: lang)),
-                    field: phone.field)
+                row(.phone(phone.id), icon: .call, label: phoneRowLabel(phone.label), field: phone.field, singleLine: true)
             }
             row(.email, icon: .mail, label: L10n.t(.email, lang: lang), field: card.email, singleLine: true)
             row(.address, icon: .location, label: L10n.t(.address, lang: lang), field: card.address,
@@ -175,11 +174,17 @@ struct ScanResultView: View {
         case .name: return L10n.t(.name, lang: lang)
         case .company: return L10n.t(.company, lang: lang)
         case .phone(let id):
-            let label = card.phones.first { $0.id == id }?.label ?? .unknown
-            return L10n.t(.phoneWithLabel, lang: lang, CardDetailText.phoneLabel(label, lang: lang))
+            return phoneRowLabel(card.phones.first { $0.id == id }?.label ?? .unknown)
         case .email: return L10n.t(.email, lang: lang)
         case .address: return L10n.t(.address, lang: lang)
         }
+    }
+    
+    /// "電話（直通）" for a labeled number, plain "電話" for an unlabeled one (not "電話（電話）").
+    private func phoneRowLabel(_ label: PhoneLabel) -> String {
+        label == .unknown
+            ? L10n.t(.phoneGeneric, lang: lang)
+            : L10n.t(.phoneWithLabel, lang: lang, CardDetailText.phoneLabel(label, lang: lang))
     }
     
     private func value(for target: Target) -> String {
