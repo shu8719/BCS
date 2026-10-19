@@ -19,7 +19,7 @@ final class CardParser {
         let texts = lines.map(\.text)
         
         let email = texts.compactMap(extractEmail).first ?? ""
-        let picked = pickCompany(from: texts, email: email)
+        let picked = pickCompany(from: lines, email: email)
         var company = picked.value
         
         let addressInfo = addressParser.pickAddressBlockInfo(from: lines)
@@ -139,13 +139,17 @@ final class CardParser {
     /// 1. a line whose letters match the e-mail domain ("CASCADE BIOTECH" ↔ cascadebiotech.com)
     /// 2. the best-scoring line (legal suffixes such as Inc. / LLC)
     /// 3. the domain itself, capitalized, flagged as inferred
-    private func pickCompany(from texts: [String], email: String) -> (value: String, inferred: Bool) {
-        let pool = texts.filter { !isJunkForCompany($0) }
+    private func pickCompany(from lines: [OCRLine], email: String) -> (value: String, inferred: Bool) {
+        let poolLines = lines.filter { !isJunkForCompany($0.text) }
+        let pool = poolLines.map(\.text)
         
         let domainKey = Self.domainKey(of: email)
         if domainKey.count >= 4 {
             if let exact = pool.first(where: { normalizeKey($0) == domainKey }) {
                 return (exact, false)
+            }
+            if let stacked = stackedLogoName(in: poolLines, matching: domainKey) {
+                return (stacked, false)
             }
             if let partial = pool.first(where: { normalizeKey($0).contains(domainKey) && companyScore($0) >= 0 }) {
                 return (partial, false)
@@ -159,6 +163,21 @@ final class CardParser {
         
         if !email.isEmpty { return (companyFromEmail(email), true) }
         return ("", false)
+    }
+    
+    /// A logo set on two lines ("CASCADE" over "BIOTECH") whose letters together spell the e-mail domain.
+    private func stackedLogoName(in lines: [OCRLine], matching domainKey: String) -> String? {
+        for upper in lines {
+            for lower in lines where lower.box.midY < upper.box.midY {
+                let gap = upper.box.minY - lower.box.maxY
+                let lineHeight = max(upper.box.height, lower.box.height)
+                guard gap < lineHeight * 1.5, abs(upper.box.midX - lower.box.midX) < 0.15 else { continue }
+                if normalizeKey(upper.text + lower.text) == domainKey {
+                    return "\(upper.text) \(lower.text)"
+                }
+            }
+        }
+        return nil
     }
     
     /// "hanako@cascadebiotech.com" → "cascadebiotech"
@@ -194,6 +213,18 @@ final class CardParser {
     private func isJunkForCompany(_ s: String) -> Bool {
         let l = s.lowercased()
         return l.contains("@") || l.contains("http") || l.contains("www") || containsContactKeyword(l)
+            || Self.isWebAddress(l)
+    }
+    
+    private static let webAddressRegex = try? NSRegularExpression(
+        pattern: #"^[a-z0-9.-]+\.(?:com|net|org|co|io|biz|us|info|tech|edu|gov|me|app|ai|jp)(?:\.[a-z]{2})?/?$"#
+    )
+    
+    /// "cascadebiotech.com" on its own line is the website, not the company name.
+    private static func isWebAddress(_ lower: String) -> Bool {
+        let t = lower.trimmingCharacters(in: .whitespaces)
+        guard let re = webAddressRegex else { return false }
+        return re.firstMatch(in: t, range: NSRange(location: 0, length: (t as NSString).length)) != nil
     }
     
     private func companyFromEmail(_ email: String) -> String {

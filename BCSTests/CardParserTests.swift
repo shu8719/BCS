@@ -45,6 +45,32 @@ final class CardParserTests: XCTestCase {
         XCTAssertEqual(card.name.value, "Hanako Sato")
     }
 
+    func testCompanyFromLogoSplitOverTwoLines() {
+        let items = [
+            ocrItem("Hanako Sato",               y: 0.79, height: 0.06, x: 0.38, width: 0.26),
+            ocrItem("Director of Product",       y: 0.71, height: 0.04, x: 0.38, width: 0.20),
+            ocrItem("CASCADE",                   y: 0.45, height: 0.05, x: 0.07, width: 0.18),
+            ocrItem("BIOTECH",                   y: 0.39, height: 0.04, x: 0.08, width: 0.16),
+            ocrItem("E h.sato@cascadebiotech.com", y: 0.36, height: 0.04, x: 0.38, width: 0.31),
+            ocrItem("cascadebiotech.com",        y: 0.11, height: 0.03, x: 0.38, width: 0.18),
+        ]
+        let card = CardParser().parse(items: items)
+        XCTAssertEqual(card.company.value, "CASCADE BIOTECH")
+        XCTAssertFalse(card.company.needsReview)
+    }
+
+    func testWebsiteLineIsNeverTheCompany() {
+        let items = [
+            ocrItem("John Smith",            y: 0.70, height: 0.06),
+            ocrItem("john@acmewidgets.com",  y: 0.32),
+            ocrItem("acmewidgets.com",       y: 0.20),
+        ]
+        let card = CardParser().parse(items: items)
+        XCTAssertNotEqual(card.company.value, "acmewidgets.com")
+        XCTAssertEqual(card.company.value, "Acmewidgets")
+        XCTAssertEqual(card.company.reviewReason, .inferred)
+    }
+
     func testCompanyGuessedFromEmailDomainIsFlagged() {
         let items = [
             ocrItem("Tarou Yamada",         y: 0.70, height: 0.06),
