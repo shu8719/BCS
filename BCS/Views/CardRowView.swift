@@ -12,7 +12,7 @@ struct CardRowView: View {
                     .font(.custom("AvenirNext-DemiBold", size: 16))
                     .foregroundStyle(.primary)
                 if !card.company.isEmpty {
-                    Text(card.company)
+                    Text(card.company.value)
                         .font(.custom("AvenirNext-Regular", size: 12))
                         .foregroundStyle(.secondary)
                 }
@@ -33,9 +33,9 @@ struct CardRowView: View {
     }
     
     private var title: String {
-        if !card.name.isEmpty    { return card.name }
-        if !card.company.isEmpty { return card.company }
-        if !card.email.isEmpty   { return card.email }
+        if !card.name.isEmpty    { return card.name.value }
+        if !card.company.isEmpty { return card.company.value }
+        if !card.email.isEmpty   { return card.email.value }
         return "Unknown"
     }
 }

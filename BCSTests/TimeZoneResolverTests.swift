@@ -65,9 +65,9 @@ final class TimeZoneResolverTests: XCTestCase {
     func testStaleTimeZoneIsClearedWhenAddressNoLongerResolves() {
         var card = BusinessCard()
         card.address = "東京都港区芝公園4-2-8"
-        card.timeZoneCode = "PST"
+        card.timeZone = .pst
         card.timeZoneId = "America/Los_Angeles"
-        card.timeZoneSourceAddress = "95110"
+        card.timeZoneSource = .zip("95110")
 
         let updates = TimeZoneResolver.resolveUpdates(for: [card])
         XCTAssertEqual(updates.count, 1)

@@ -4,9 +4,9 @@ import XCTest
 final class CSVExporterTests: XCTestCase {
     private func card(name: String, company: String = "ACME", address: String = "", phones: [String] = [], email: String = "", tz: String = "") -> BusinessCard {
         var c = BusinessCard()
-        c.name = name; c.company = company; c.address = address
+        c.name = ContactField(name); c.company = ContactField(company); c.address = ContactField(address)
         c.phones = phones.map { LabeledNumber(label: .unknown, number: $0) }
-        c.email = email; c.timeZoneCode = tz
+        c.email = ContactField(email); c.timeZone = USTimeZone(rawValue: tz)
         return c
     }
 

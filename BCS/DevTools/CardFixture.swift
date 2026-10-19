@@ -48,11 +48,11 @@ struct CardFixture: Codable, Equatable {
         init() {}
         
         init(card: BusinessCard, timeZoneCode: String?) {
-            name = card.name
-            company = card.company
+            name = card.name.value
+            company = card.company.value
             phones = card.phones.map(\.number)
-            email = card.email
-            address = card.address
+            email = card.email.value
+            address = card.address.value
             self.timeZoneCode = timeZoneCode ?? ""
         }
     }

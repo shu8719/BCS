@@ -7,11 +7,11 @@ struct CardSummaryView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            infoRow(L10n.t(.name,    lang: settings.language), card.name,           iconAsset: "IconPerson")
-            infoRow(L10n.t(.company, lang: settings.language), card.company,        iconAsset: "IconBuilding")
+            infoRow(L10n.t(.name,    lang: settings.language), card.name.value,     iconAsset: "IconPerson")
+            infoRow(L10n.t(.company, lang: settings.language), card.company.value,  iconAsset: "IconBuilding")
             infoRow(L10n.t(.phone,   lang: settings.language), displayPhones,       iconAsset: "IconPhone")
-            infoRow(L10n.t(.email,   lang: settings.language), card.email,          iconAsset: "IconEmail")
-            infoRow(L10n.t(.address, lang: settings.language), card.address,        iconAsset: "IconMap", badgeCode: card.timeZoneCode)
+            infoRow(L10n.t(.email,   lang: settings.language), card.email.value,    iconAsset: "IconEmail")
+            infoRow(L10n.t(.address, lang: settings.language), card.address.value,  iconAsset: "IconMap", badgeCode: card.timeZoneCode)
         }
         .padding(18)
         .background(

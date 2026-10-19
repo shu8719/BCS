@@ -29,7 +29,7 @@ final class FixtureRecorder {
     
     /// e.g. "paper_acme_electronics_inc_20261016_173000"
     static func fixtureName(for card: BusinessCard, source: CardFixture.Source, date: Date = Date()) -> String {
-        let base = [card.company, card.name].first { !$0.isEmpty } ?? "card"
+        let base = [card.company.value, card.name.value].first { !$0.isEmpty } ?? "card"
         var slug = base.lowercased()
             .map { ($0.isASCII && ($0.isLetter || $0.isNumber)) ? String($0) : "_" }
             .joined()

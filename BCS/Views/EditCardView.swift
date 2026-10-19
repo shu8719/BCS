@@ -12,12 +12,12 @@ struct EditCardView: View {
         NavigationStack {
             Form {
                 Section(header: Text(L10n.t(.name, lang: settings.language))) {
-                    TextField(L10n.t(.name, lang: settings.language), text: $draft.name)
+                    TextField(L10n.t(.name, lang: settings.language), text: $draft.name.value)
                         .autocorrectionDisabled()
                 }
 
                 Section(header: Text(L10n.t(.company, lang: settings.language))) {
-                    TextField(L10n.t(.company, lang: settings.language), text: $draft.company)
+                    TextField(L10n.t(.company, lang: settings.language), text: $draft.company.value)
                         .autocorrectionDisabled()
                 }
 
@@ -34,14 +34,14 @@ struct EditCardView: View {
                 }
 
                 Section(header: Text(L10n.t(.email, lang: settings.language))) {
-                    TextField("example@mail.com", text: $draft.email)
+                    TextField("example@mail.com", text: $draft.email.value)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                 }
 
                 Section(header: Text(L10n.t(.address, lang: settings.language))) {
-                    TextEditor(text: $draft.address)
+                    TextEditor(text: $draft.address.value)
                         .frame(minHeight: 90)
                 }
 

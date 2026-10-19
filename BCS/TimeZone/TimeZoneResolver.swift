@@ -42,16 +42,16 @@ struct TimeZoneResolver {
             guard let (meta, sourceKey) = resolve(for: card) else {
                 // No longer resolvable (e.g. address edited to a non-US one):
                 // clear any stale timezone instead of leaving the old badge in place.
-                let hasStale = !card.timeZoneId.isEmpty || !card.timeZoneCode.isEmpty || !card.timeZoneSourceAddress.isEmpty
+                let hasStale = !card.timeZoneId.isEmpty || card.timeZone != nil || card.timeZoneSource != nil
                 return hasStale ? TimeZoneUpdate(cardID: card.id, code: "", identifier: "", sourceKey: "") : nil
             }
-            guard card.timeZoneId.isEmpty || card.timeZoneSourceAddress != sourceKey else { return nil }
+            guard card.timeZoneId.isEmpty || card.timeZoneSource != TimeZoneSource(legacySourceKey: sourceKey) else { return nil }
             return TimeZoneUpdate(cardID: card.id, code: meta.code ?? "", identifier: meta.identifier, sourceKey: sourceKey)
         }
     }
 
     func resolve(for card: BusinessCard) -> (meta: TimeZoneMeta, sourceKey: String)? {
-        let addr = card.address.trimmingCharacters(in: .whitespacesAndNewlines)
+        let addr = card.address.value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !addr.isEmpty, Self.looksLikeUSAddress(addr, phones: card.phones) else { return nil }
 
         if let zip = Self.extractUSZip(from: addr), let tzId = zipDB.timeZoneIdentifier(for: zip) {

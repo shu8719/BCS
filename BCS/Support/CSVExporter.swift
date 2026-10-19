@@ -9,7 +9,7 @@ enum CSVExporter {
         var rows = [headers.map(escape).joined(separator: ",")]
         for c in cards {
             let phones = c.phones.map(\.number).joined(separator: " / ")
-            rows.append([c.name, c.company, c.address, phones, c.email, c.timeZoneCode]
+            rows.append([c.name.value, c.company.value, c.address.value, phones, c.email.value, c.timeZoneCode]
                 .map(escape).joined(separator: ","))
         }
         return "\u{FEFF}" + rows.joined(separator: "\r\n")

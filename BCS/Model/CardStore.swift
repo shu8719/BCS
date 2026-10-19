@@ -180,9 +180,9 @@ final class CardStore {
             }.value
             for update in updates {
                 guard let idx = self.cards.firstIndex(where: { $0.id == update.cardID }) else { continue }
-                self.cards[idx].timeZoneCode = update.code
+                self.cards[idx].timeZone = USTimeZone(rawValue: update.code)
                 self.cards[idx].timeZoneId = update.identifier
-                self.cards[idx].timeZoneSourceAddress = update.sourceKey
+                self.cards[idx].timeZoneSource = TimeZoneSource(legacySourceKey: update.sourceKey)
             }
             if !updates.isEmpty { self.save() }
         }

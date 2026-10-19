@@ -9,7 +9,7 @@ final class CardParserTests: XCTestCase {
         XCTAssertEqual(card.company, "ACME Electronics Inc.")
         XCTAssertEqual(card.email, "john.smith@acme.com")
         XCTAssertEqual(card.phones.map { $0.number.filter(\.isNumber) }, ["4085551234"])
-        XCTAssertTrue(card.address.contains("CA 95110"), card.address)
+        XCTAssertTrue(card.address.value.contains("CA 95110"), card.address.value)
     }
 
     func testSplitsTwoColumnRowIntoSeparateLines() {

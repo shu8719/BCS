@@ -68,10 +68,10 @@ struct FixtureEvaluator {
             let card = parser.parse(items: fixture.ocrItems)
             let e = fixture.expected
             
-            check(.name,    fixture: fixture.name, expected: e.name,    actual: card.name,    normalize: Self.text)
-            check(.company, fixture: fixture.name, expected: e.company, actual: card.company, normalize: Self.text)
-            check(.email,   fixture: fixture.name, expected: e.email,   actual: card.email,   normalize: Self.text)
-            check(.address, fixture: fixture.name, expected: e.address, actual: card.address, normalize: Self.alphanumeric)
+            check(.name,    fixture: fixture.name, expected: e.name,    actual: card.name.value,    normalize: Self.text)
+            check(.company, fixture: fixture.name, expected: e.company, actual: card.company.value, normalize: Self.text)
+            check(.email,   fixture: fixture.name, expected: e.email,   actual: card.email.value,   normalize: Self.text)
+            check(.address, fixture: fixture.name, expected: e.address, actual: card.address.value, normalize: Self.alphanumeric)
             check(.phones,  fixture: fixture.name,
                   expected: e.phones.map { $0.joined(separator: " / ") },
                   actual: card.phones.map(\.number).joined(separator: " / "),
