@@ -23,7 +23,7 @@ struct ScanFlowPresentation: ViewModifier {
             }
             .sheet(isPresented: Binding(get: { flow.stage == .camera },
                                         set: { if !$0, flow.stage == .camera { flow.cancel() } }),
-                   onDismiss: { flow.presentationDidEnd() }) {
+                   onDismiss: { PresentationIdle.whenIdle { flow.presentationDidEnd() } }) {
                 ScannerView(
                     onRecognized: { items in flow.handleRecognized(items: items) },
                     onFailed: { flow.handleFailed() },
@@ -45,17 +45,17 @@ struct ScanFlowPresentation: ViewModifier {
                     }
                 }
             }
-            // The photo picker has no onDismiss; its dismissal animation is well under this.
+            // The photo picker has no onDismiss, and its dismissal time varies; release a parked result
+            // only once UIKit reports nothing presented. The processing hook also covers the camera,
+            // which VisionKit dismisses itself. presentationDidEnd() is idempotent.
             .onChange(of: flow.stage == .photoPicker) { wasPicker, isPicker in
                 if wasPicker && !isPicker {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { flow.presentationDidEnd() }
+                    PresentationIdle.whenIdle { flow.presentationDidEnd() }
                 }
             }
-            // Safety net: if no dismissal callback ever arrives (e.g. the camera could not be presented),
-            // release a parked result anyway. presentationDidEnd() is idempotent.
             .onChange(of: flow.stage == .processing) { _, isProcessing in
                 if isProcessing {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { flow.presentationDidEnd() }
+                    PresentationIdle.whenIdle { flow.presentationDidEnd() }
                 }
             }
             .fullScreenCover(isPresented: Binding(get: { flow.isShowingResult },

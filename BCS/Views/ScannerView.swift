@@ -9,13 +9,21 @@ struct ScannerView: UIViewControllerRepresentable {
     var onFailed:          () -> Void = {}
     var onStartProcessing: () -> Void = {}
 
-    func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
+    func makeUIViewController(context: Context) -> UIViewController {
+        #if DEBUG
+        if DebugLaunch.usesFakeDocumentCamera {
+            let coordinator = context.coordinator
+            return FakeDocumentCameraController { image, controller in
+                coordinator.handleCapture(image, from: controller)
+            }
+        }
+        #endif
         let vc = VNDocumentCameraViewController()
         vc.delegate = context.coordinator
         return vc
     }
 
-    func updateUIViewController(_ uiViewController: VNDocumentCameraViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onRecognized: onRecognized, onFailed: onFailed, onStartProcessing: onStartProcessing)
@@ -40,7 +48,11 @@ struct ScannerView: UIViewControllerRepresentable {
                 return
             }
             
-            let image = scan.imageOfPage(at: max(0, scan.pageCount - 1))
+            handleCapture(scan.imageOfPage(at: max(0, scan.pageCount - 1)), from: controller)
+        }
+        
+        /// Shared by VisionKit and the DEBUG fake camera.
+        func handleCapture(_ image: UIImage, from controller: UIViewController) {
             controller.dismiss(animated: true) {
                 self.onStartProcessing()
                 guard let cg = image.cgImage else {

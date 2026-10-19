@@ -60,6 +60,8 @@ struct CardListView: View {
             .onAppear {
                 if DebugLaunch.showsScanResultSample, flow.stage == .idle {
                     flow.handleRecognized(items: DebugLaunch.sampleItems)
+                } else if DebugLaunch.showsScanResultMissingCompany, flow.stage == .idle {
+                    flow.handleRecognized(items: DebugLaunch.missingCompanyItems)
                 }
             }
             #endif

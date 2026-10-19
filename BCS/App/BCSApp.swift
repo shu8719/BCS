@@ -2,7 +2,16 @@
 
 @main
 struct BCSApp: App {
-    @State private var store = CardStore()
+    @State private var store: CardStore = {
+        #if DEBUG
+        if DebugLaunch.usesTemporaryStore {
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("uitest-\(UUID().uuidString)")
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return CardStore(directory: dir)
+        }
+        #endif
+        return CardStore()
+    }()
     @StateObject private var settings = AppSettings()
     
     init() {

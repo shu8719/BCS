@@ -25,7 +25,9 @@ struct ScanFABMenu: View {
             VStack(alignment: .trailing, spacing: 8) {
                 if isOpen {
                     menuItem(icon: .image, label: photoLabel) { close(); onPhoto() }
+                        .accessibilityIdentifier("scanMenuPhoto")
                     menuItem(icon: .camera, label: cameraLabel) { close(); onCamera() }
+                        .accessibilityIdentifier("scanMenuCamera")
                     Color.clear.frame(height: 4)   // 12pt between the last item and the FAB
                 }
                 fab
@@ -57,6 +59,7 @@ struct ScanFABMenu: View {
             .shadow(color: .black.opacity(0.3), radius: 1.5, x: 0, y: 1)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("scanFAB")
     }
     
     private func menuItem(icon: BCSIcon, label: String, action: @escaping () -> Void) -> some View {
