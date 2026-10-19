@@ -76,12 +76,11 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.2), value: store.undoState != nil)
         .sheet(isPresented: $showScanner) {
             ScannerView(
-                card: $scanDraft,
-                onFinish: {
+                onRecognized: { items in
                     isProcessing = false
+                    scanDraft = CardParser().parse(items: items)
                     showScanDraftEditor = true
                 },
-                onEmpty:  { isProcessing = false; activeAlert = .scanEmpty },
                 onFailed: { isProcessing = false; activeAlert = .scanFailed },
                 onStartProcessing: { isProcessing = true }
             )

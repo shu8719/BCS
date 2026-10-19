@@ -50,6 +50,10 @@ struct L10n {
         // Card edit (04)
         case editCardTitle, phoneN, phoneWithLabel
         case tzAuto, tzUnknown, tzNameEST, tzNameCST, tzNameMST, tzNamePST, tzBasisZip, tzBasisAreaCode
+
+        // Scan result (06) and scan entry
+        case scanResultTitle, readFieldsCount, tapToFix, bannerNormalizedPhone, bannerMissing
+        case retake, saveCard, scanWithCamera, scanFromPhoto, tzFromZipShort, tzFromAreaCodeShort, photoLoadFailed
     }
 
     /// Formats a key that contains %d / %@ placeholders.
@@ -174,6 +178,19 @@ struct L10n {
             case .tzNamePST: return "太平洋標準時"
             case .tzBasisZip: return "郵便番号 %@ から判定"
             case .tzBasisAreaCode: return "市外局番 %@ から判定"
+
+            case .scanResultTitle: return "読み取り結果"
+            case .readFieldsCount: return "%d項目を読み取りました"
+            case .tapToFix: return "タップで修正"
+            case .bannerNormalizedPhone: return "電話番号「%@」を整形しました。保存前に確認してください。"
+            case .bannerMissing: return "名前または会社名を読み取れませんでした。"
+            case .retake: return "撮り直す"
+            case .saveCard: return "保存する"
+            case .scanWithCamera: return "カメラでスキャン"
+            case .scanFromPhoto: return "写真から"
+            case .tzFromZipShort: return "郵便番号 %@ からタイムゾーンを判定"
+            case .tzFromAreaCodeShort: return "市外局番 %@ からタイムゾーンを判定"
+            case .photoLoadFailed: return "画像を読み込めませんでした"
             }
             
         case .english, .system:
@@ -284,6 +301,19 @@ struct L10n {
             case .tzNamePST: return "Pacific Time"
             case .tzBasisZip: return "From ZIP %@"
             case .tzBasisAreaCode: return "From area code %@"
+
+            case .scanResultTitle: return "Scan result"
+            case .readFieldsCount: return "%d fields read"
+            case .tapToFix: return "Tap to fix"
+            case .bannerNormalizedPhone: return "Phone number “%@” was reformatted. Check it before saving."
+            case .bannerMissing: return "Name or company could not be read."
+            case .retake: return "Retake"
+            case .saveCard: return "Save"
+            case .scanWithCamera: return "Scan with camera"
+            case .scanFromPhoto: return "From photo"
+            case .tzFromZipShort: return "Time zone from ZIP %@"
+            case .tzFromAreaCodeShort: return "Time zone from area code %@"
+            case .photoLoadFailed: return "Could not load the image"
             }
         }
     }

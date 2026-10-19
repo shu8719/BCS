@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 /// 01 名刺一覧: brand bar, search, filter chips, cards grouped by week, scan FAB.
 struct CardListView: View {
@@ -19,14 +20,9 @@ struct CardListView: View {
         let url: URL
     }
     
-    // Scan flow placeholder (replaced by ScanFlow in the scan-result task).
-    @State private var showScanner = false
-    @State private var scanDraft = BusinessCard()
-    @State private var showScanDraftEditor = false
-    @State private var isProcessing = false
-    @State private var scanAlert: ScanAlert?
-    
-    private enum ScanAlert { case empty, failed }
+    @State private var flow = ScanFlow()
+    @State private var showScanMenu = false
+    @State private var pickedPhoto: PhotosPickerItem?
     
     private var lang: AppSettings.Language { settings.language }
     
@@ -53,19 +49,16 @@ struct CardListView: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
                 
-                if isProcessing {
+                if flow.stage == .processing {
                     Color.black.opacity(0.35).ignoresSafeArea()
                     ProgressView().tint(.white).scaleEffect(1.5)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 
                 if !isSelecting {
-                    ScanFAB(label: L10n.t(.scan, lang: lang)) {
-                        scanDraft = BusinessCard()
-                        showScanner = true
-                    }
-                    .padding(.trailing, 16)
-                    .padding(.bottom, 16)
+                    ScanFAB(label: L10n.t(.scan, lang: lang)) { showScanMenu = true }
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 16)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -105,26 +98,50 @@ struct CardListView: View {
                     Button(zone.rawValue) { query.zone = zone }
                 }
             }
-            .sheet(isPresented: $showScanner) {
+            .confirmationDialog(L10n.t(.scan, lang: lang), isPresented: $showScanMenu, titleVisibility: .hidden) {
+                Button(L10n.t(.scanWithCamera, lang: lang)) { flow.startCamera() }
+                Button(L10n.t(.scanFromPhoto, lang: lang)) { flow.startPhotoPicker() }
+            }
+            .sheet(isPresented: Binding(get: { flow.stage == .camera }, set: { if !$0, flow.stage == .camera { flow.cancel() } })) {
                 ScannerView(
-                    card: $scanDraft,
-                    onFinish: { isProcessing = false; showScanDraftEditor = true },
-                    onEmpty:  { isProcessing = false; scanAlert = .empty },
-                    onFailed: { isProcessing = false; scanAlert = .failed },
-                    onStartProcessing: { isProcessing = true }
+                    onRecognized: { items in flow.handleRecognized(items: items) },
+                    onFailed: { flow.handleFailed() },
+                    onStartProcessing: { flow.beginProcessing() }
                 )
             }
-            .sheet(isPresented: $showScanDraftEditor) {
-                EditCardView(card: $scanDraft, onSave: { store.append($0) })
+            .photosPicker(isPresented: Binding(get: { flow.stage == .photoPicker }, set: { if !$0, flow.stage == .photoPicker { flow.cancel() } }),
+                          selection: $pickedPhoto, matching: .images)
+            .onChange(of: pickedPhoto) { _, item in
+                guard let item else { return }
+                pickedPhoto = nil
+                flow.beginProcessing()
+                Task {
+                    if let items = await PhotoImport.recognize(item) {
+                        flow.handleRecognized(items: items)
+                    } else {
+                        flow.handleFailed()
+                    }
+                }
+            }
+            .fullScreenCover(isPresented: Binding(get: { flow.isShowingResult }, set: { if !$0, flow.isShowingResult { flow.cancel() } })) {
+                if let card = flow.resultCard {
+                    ScanResultView(
+                        card: card,
+                        onChange: { flow.updateResult($0) },
+                        onSave: { flow.save(into: store) },
+                        onRetake: { flow.retake() },
+                        onCancel: { flow.cancel() }
+                    )
+                }
             }
             .alert(
-                Text(scanAlert == .failed ? L10n.t(.scanFailedTitle, lang: lang) : L10n.t(.scanEmptyTitle, lang: lang)),
-                isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } }),
-                presenting: scanAlert
+                Text(flow.error == .failed ? L10n.t(.scanFailedTitle, lang: lang) : L10n.t(.scanEmptyTitle, lang: lang)),
+                isPresented: Binding(get: { flow.error != nil }, set: { if !$0 { flow.error = nil } }),
+                presenting: flow.error
             ) { _ in
                 Button(L10n.t(.ok, lang: lang), role: .cancel) {}
-            } message: { alert in
-                Text(alert == .failed ? L10n.t(.scanFailedMessage, lang: lang) : L10n.t(.scanEmptyMessage, lang: lang))
+            } message: { error in
+                Text(error == .failed ? L10n.t(.scanFailedMessage, lang: lang) : L10n.t(.scanEmptyMessage, lang: lang))
             }
         }
     }
