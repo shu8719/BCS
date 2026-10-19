@@ -23,6 +23,8 @@ final class ScanFlow {
     
     private let parser = CardParser()
     private let resolver: TimeZoneResolver
+    /// Which entry point produced the current scan; recorded with DEBUG fixtures.
+    private var origin: CardFixture.Source = .paper
     
     init(resolver: TimeZoneResolver? = nil) {
         self.resolver = resolver ?? TimeZoneResolver()
@@ -38,8 +40,8 @@ final class ScanFlow {
         return nil
     }
     
-    func startCamera() { stage = .camera }
-    func startPhotoPicker() { stage = .photoPicker }
+    func startCamera() { origin = .paper; stage = .camera }
+    func startPhotoPicker() { origin = .image; stage = .photoPicker }
     func beginProcessing() { stage = .processing }
     func cancel() { stage = .idle }
     
@@ -51,7 +53,7 @@ final class ScanFlow {
     }
     
     func resumeCameraAfterRetake() {
-        if stage == .retaking { stage = .camera }
+        if stage == .retaking { origin = .paper; stage = .camera }
     }
     
     /// Parses the OCR fragments and moves to the result stage.
@@ -61,7 +63,7 @@ final class ScanFlow {
         var card = parser.parse(items: items)
         card.scannedAt = Date()
         #if DEBUG
-        FixtureRecorder.shared.record(items: items, card: card)
+        FixtureRecorder.shared.record(items: items, card: card, source: origin)
         #endif
         let hasContent = !card.name.isEmpty || !card.company.isEmpty || !card.email.isEmpty
             || !card.phones.isEmpty || !card.address.isEmpty

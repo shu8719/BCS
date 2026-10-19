@@ -63,6 +63,20 @@ final class ScanFlowTests: XCTestCase {
         XCTAssertEqual(flow.stage, .idle)
     }
 
+    func testFixtureSourceFollowsTheScanEntryPoint() {
+        let flow = ScanFlow(resolver: repoTimeZoneResolver())
+        flow.startCamera()
+        _ = flow.handleRecognized(items: sampleUSCardItems())
+        XCTAssertEqual(FixtureRecorder.shared.lastSource, .paper)
+        XCTAssertEqual(FixtureRecorder.shared.makeFixture()?.source, .paper)
+
+        flow.cancel()
+        flow.startPhotoPicker()
+        _ = flow.handleRecognized(items: sampleUSCardItems())
+        XCTAssertEqual(FixtureRecorder.shared.lastSource, .image)
+        XCTAssertEqual(FixtureRecorder.shared.makeFixture()?.source, .image)
+    }
+
     func testUpdateResultReplacesDraft() {
         let flow = ScanFlow(resolver: repoTimeZoneResolver())
         _ = flow.handleRecognized(items: sampleUSCardItems())

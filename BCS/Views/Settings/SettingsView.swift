@@ -14,8 +14,6 @@ struct SettingsView: View {
     }
     
     #if DEBUG
-    @State private var fixtureSource: CardFixture.Source = .paper
-    @State private var showSourceDialog = false
     @State private var fixtureExport: ExportItem?
     @State private var devMessage: String?
     #endif
@@ -66,11 +64,6 @@ struct SettingsView: View {
             Text(L10n.t(.resetAllMessage, lang: lang))
         }
         #if DEBUG
-        .confirmationDialog("フィクスチャの由来", isPresented: $showSourceDialog, titleVisibility: .visible) {
-            ForEach(CardFixture.Source.allCases.filter { $0 != .synthetic }) { source in
-                Button(sourceLabel(source)) { fixtureSource = source }
-            }
-        }
         .sheet(item: $fixtureExport) { item in
             ShareSheet(items: [item.url])
         }
@@ -142,9 +135,6 @@ struct SettingsView: View {
     
     private var developerGroup: some View {
         GroupedRows(cornerRadius: 20) {
-            SettingsRow(icon: .code, title: "フィクスチャの由来", subtitle: sourceLabel(fixtureSource), chevron: true) {
-                showSourceDialog = true
-            }
             SettingsRow(icon: .share, title: "直近のスキャンをフィクスチャとして書き出す") {
                 exportFixture()
             }
@@ -159,6 +149,7 @@ struct SettingsView: View {
             }
             Text("タイムゾーン DB：ZIP \(formatted(TimeZoneLookupTable.bundledZip.entryCount)) 件 / 市外局番 \(formatted(TimeZoneLookupTable.bundledAreaCode.entryCount)) 件")
             Text("書き出した JSON を BCSTests/Fixtures/ に置き、expected の誤っている項目だけ正しい値に直してください。名刺画像は保存されません。")
+            Text("由来（source）はカメラなら paper、写真なら image が自動で入ります。画面に表示した名刺を撮った場合は JSON の source を screen に直してください。")
         }
         .textStyle(.bodySmall)
         .foregroundStyle(M3.onSurfaceVariant)
@@ -171,17 +162,8 @@ struct SettingsView: View {
         return f.string(from: NSNumber(value: n)) ?? "\(n)"
     }
     
-    private func sourceLabel(_ source: CardFixture.Source) -> String {
-        switch source {
-        case .paper:     return "紙の名刺をカメラで撮影"
-        case .screen:    return "画面に表示した名刺を撮影"
-        case .image:     return "画像ファイルから OCR"
-        case .synthetic: return "手書き"
-        }
-    }
-    
     private func exportFixture() {
-        guard let fixture = FixtureRecorder.shared.makeFixture(source: fixtureSource) else { return }
+        guard let fixture = FixtureRecorder.shared.makeFixture() else { return }
         do {
             let data = try CardFixture.encode(fixture)
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(fixture.name).json")
