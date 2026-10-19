@@ -29,12 +29,10 @@ struct ScanResultView: View {
     private var lang: AppSettings.Language { settings.language }
     
     var body: some View {
-        // Presented as a fullScreenCover: lay out against the real screen insets instead of relying
-        // on the automatic safe area, so the top bar never sits under the status bar.
-        GeometryReader { proxy in
-            VStack(spacing: 0) {
+        // Background via .background so the content itself stays inside the safe area.
+        VStack(spacing: 0) {
+            Group {
                 topBar
-                    .padding(.top, proxy.safeAreaInsets.top)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         if let banner = bannerText {
@@ -49,12 +47,10 @@ struct ScanResultView: View {
                     .padding(.top, 4)
                     .padding(.bottom, 16)
                 }
-                bottomBar(bottomInset: proxy.safeAreaInsets.bottom)
+                bottomBar
             }
-            .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        .background(M3.surfaceContainerLow)
-        .ignoresSafeArea()
+        .background(M3.surfaceContainerLow.ignoresSafeArea())
         .sheet(item: $editing) { target in
             FieldEditSheet(title: title(for: target), value: value(for: target),
                            multiline: isAddress(target), keyboard: keyboard(for: target)) { newValue in
@@ -160,15 +156,15 @@ struct ScanResultView: View {
         }
     }
     
-    private func bottomBar(bottomInset: CGFloat) -> some View {
+    private var bottomBar: some View {
         HStack(spacing: 12) {
             BCSButton(L10n.t(.retake, lang: lang), icon: .camera, style: .outlined, fullWidth: true) { onRetake() }
             BCSButton(L10n.t(.saveCard, lang: lang), icon: .check, style: .filled, fullWidth: true) { onSave() }
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
-        .padding(.bottom, 12 + bottomInset)
-        .background(M3.surfaceContainer)
+        .padding(.bottom, 12)
+        .background(M3.surfaceContainer.ignoresSafeArea())
     }
     
     // MARK: - Single-field editing

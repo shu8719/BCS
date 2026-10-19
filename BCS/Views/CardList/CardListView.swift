@@ -56,6 +56,13 @@ struct CardListView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+            #if DEBUG
+            .onAppear {
+                if DebugLaunch.showsScanResultSample, flow.stage == .idle {
+                    flow.handleRecognized(items: DebugLaunch.sampleItems)
+                }
+            }
+            #endif
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 0) {
                     if let state = store.undoState {

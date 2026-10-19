@@ -77,6 +77,33 @@ final class ScanFlowTests: XCTestCase {
         XCTAssertEqual(FixtureRecorder.shared.makeFixture()?.source, .image)
     }
 
+    func testResultWaitsUntilTheCameraSheetHasGone() {
+        let flow = ScanFlow(resolver: repoTimeZoneResolver())
+        flow.startCamera()                                         // sheet on screen
+        XCTAssertTrue(flow.handleRecognized(items: sampleUSCardItems()))
+        XCTAssertEqual(flow.stage, .processing)                    // not yet: the sheet is still dismissing
+        XCTAssertFalse(flow.isShowingResult)
+        flow.presentationDidEnd()                                  // sheet's onDismiss
+        XCTAssertEqual(resultCard(flow)?.name.value, "John Smith")
+    }
+
+    func testResultShowsAtOnceWhenNothingElseIsPresented() {
+        let flow = ScanFlow(resolver: repoTimeZoneResolver())
+        flow.startCamera()
+        flow.presentationDidEnd()                                  // camera already closed before OCR finished
+        XCTAssertTrue(flow.handleRecognized(items: sampleUSCardItems()))
+        XCTAssertTrue(flow.isShowingResult)
+    }
+
+    func testCancelDropsAPendingResult() {
+        let flow = ScanFlow(resolver: repoTimeZoneResolver())
+        flow.startPhotoPicker()
+        _ = flow.handleRecognized(items: sampleUSCardItems())
+        flow.cancel()
+        flow.presentationDidEnd()
+        XCTAssertEqual(flow.stage, .idle)
+    }
+
     func testUpdateResultReplacesDraft() {
         let flow = ScanFlow(resolver: repoTimeZoneResolver())
         _ = flow.handleRecognized(items: sampleUSCardItems())

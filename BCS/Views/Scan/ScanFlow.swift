@@ -21,6 +21,12 @@ final class ScanFlow {
     /// Set when the last scan produced nothing or the camera failed; the list shows an alert and clears it.
     var error: ScanError? = nil
     
+    /// True from the moment the camera sheet / photo picker is requested until the presentation layer
+    /// reports it fully gone. A result that arrives in between is parked in `pendingResult`, because a
+    /// fullScreenCover presented while a sheet is still dismissing is laid out without a safe area.
+    private(set) var isPresentingPicker = false
+    private var pendingResult: BusinessCard?
+    
     private let parser = CardParser()
     private let resolver: TimeZoneResolver
     /// Which entry point produced the current scan; recorded with DEBUG fixtures.
@@ -40,10 +46,23 @@ final class ScanFlow {
         return nil
     }
     
-    func startCamera() { origin = .paper; stage = .camera }
-    func startPhotoPicker() { origin = .image; stage = .photoPicker }
+    func startCamera() { origin = .paper; isPresentingPicker = true; stage = .camera }
+    func startPhotoPicker() { origin = .image; isPresentingPicker = true; stage = .photoPicker }
     func beginProcessing() { stage = .processing }
-    func cancel() { stage = .idle }
+    
+    func cancel() {
+        pendingResult = nil
+        stage = .idle
+    }
+    
+    /// Called by the presentation layer once the camera sheet or photo picker has finished dismissing.
+    func presentationDidEnd() {
+        isPresentingPicker = false
+        if let card = pendingResult {
+            pendingResult = nil
+            stage = .result(card)
+        }
+    }
     
     /// Presenting the camera sheet while the result cover is still dismissing is refused by UIKit,
     /// so retake goes through `.retaking` and the presentation layer calls `resumeCameraAfterRetake()`.
@@ -53,7 +72,7 @@ final class ScanFlow {
     }
     
     func resumeCameraAfterRetake() {
-        if stage == .retaking { origin = .paper; stage = .camera }
+        if stage == .retaking { origin = .paper; isPresentingPicker = true; stage = .camera }
     }
     
     /// Parses the OCR fragments and moves to the result stage.
@@ -73,7 +92,12 @@ final class ScanFlow {
             return false
         }
         CardStore.apply(resolver.resolve(for: card), to: &card)
-        stage = .result(card)
+        if isPresentingPicker {
+            pendingResult = card
+            stage = .processing
+        } else {
+            stage = .result(card)
+        }
         return true
     }
     
