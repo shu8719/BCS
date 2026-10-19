@@ -17,36 +17,42 @@ final class CardParser {
         let lines = buildLines(from: items)
         let texts = lines.map(\.text)
         
-        var result = BusinessCard()
-        result.email = texts.compactMap(extractEmail).first ?? ""
-        result.company = pickCompany(from: texts, email: result.email)
+        let email = texts.compactMap(extractEmail).first ?? ""
+        var company = pickCompany(from: texts, email: email)
         
         let addressInfo = addressParser.pickAddressBlockInfo(from: lines)
         let addrExtract = phoneParser.extractPhonesFromAddressText(addressInfo.text)
-        result.address = addrExtract.cleanAddress
+        var address = addrExtract.cleanAddress
         
         // Try a second-pass recovery for multi-line addresses.
         let recovered = addressParser.recoverAddress(from: lines)
         if !recovered.isEmpty {
             let recoveredClean = phoneParser.extractPhonesFromAddressText(recovered).cleanAddress
-            if isBetterAddressCandidate(recoveredClean, than: result.address) {
-                result.address = recoveredClean
+            if isBetterAddressCandidate(recoveredClean, than: address) {
+                address = recoveredClean
             }
         }
         
         let phonesFromLines = phoneParser.extractPhones(from: lines)
         let phonesFromAll = phoneParser.extractPhonesFromWholeText(lines: lines)
-        result.phones = phoneParser.dedupePhones(phonesFromLines + addrExtract.phones + phonesFromAll)
+        let phones = phoneParser.dedupePhones(phonesFromLines + addrExtract.phones + phonesFromAll)
         
-        result.name = nameParser.pickName(
+        var name = nameParser.pickName(
             from: lines,
-            email: result.email,
-            company: result.company,
-            address: result.address,
+            email: email,
+            company: company,
+            address: address,
             looksLikeAddressLine: addressParser.looksLikeAddressLine
         )
-        nameParser.normalizeNameCompanyByEmailHints(&result, companyScore: companyScore)
+        nameParser.normalizeNameCompanyByEmailHints(name: &name, company: &company, email: email, companyScore: companyScore)
         
+        var result = BusinessCard()
+        result.name = ContactField(name)
+        result.company = ContactField(company)
+        result.phones = phones
+        result.email = ContactField(email)
+        result.address = ContactField(address)
+        ReviewFlagger.apply(to: &result)
         return result
     }
     

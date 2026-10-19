@@ -1,9 +1,37 @@
-# BCS - Business Card Scanner
+# BCS — Business Card Scanner
 
-SwiftUI と Apple Vision フレームワークを用いた iOS 名刺スキャンアプリです。
-カメラで名刺を撮影するだけで氏名・会社・電話・メール・住所を自動抽出し、CSV でエクスポートできます。
-米国の名刺に対しては、住所の郵便番号または電話番号の市外局番から PST・MST・CST・EST を自動判定する機能も実装しています。
-OCR と、独自のパーサーパイプラインを組み合わせることで、レイアウトが異なる名刺にも高精度で対応します。
+iPhone で名刺を撮るだけで、氏名・会社・電話・メール・住所を読み取り、米国の時間帯（PST / MST / CST / EST）と相手の現地時刻まで表示する iOS アプリです。読み取り結果は CSV で書き出して Excel で管理できます。
+
+- **言語 / UI**: Swift 5 / SwiftUI（iOS 17+）
+- **OCR**: Vision（`VNRecognizeTextRequest`）+ VisionKit の書類カメラ
+- **デザイン**: Material 3 ベース。Figma で設計し、Figma MCP 経由でトークンとアイコンを取り込み
+- **テスト**: XCTest 105 件 + 実名刺の OCR 結果を使った精度評価
+
+---
+
+## 背景
+
+シリコンバレーにある日系電子部品メーカーの営業部門向けに作りました。もらった名刺が増えすぎて管理できない、営業先が米国の 4 つの時間帯にまたがっていて電話のタイミングを毎回調べている、という 2 つの困りごとが出発点です。
+
+- 名刺は撮るだけ。項目分けはアプリが行い、人は確認するだけ
+- 住所の郵便番号（または電話の市外局番）から時間帯を自動判定し、一覧に **相手の現地時刻** を出す
+- データは端末内だけで完結（サーバーなし、画像も保存しない）
+
+---
+
+## 画面
+
+> 画像は Figma の設計データです。実機のスクリーンショットに順次差し替えます。
+
+| 一覧 | スキャンメニュー | 複数選択 |
+|:--:|:--:|:--:|
+| <img src="docs/screens/01_list.png" width="230"> | <img src="docs/screens/01b_scan_menu.png" width="230"> | <img src="docs/screens/02_select.png" width="230"> |
+| 検索・要確認 / 時間帯の絞り込み、今週 / それ以前のグループ、現地時刻 | FAB が閉じるボタンに変形し、「写真から選ぶ」「カメラでスキャン」が展開 | 長押しで選択モード。選んだ名刺を CSV 書き出し / 削除 |
+
+| 詳細 | 編集 | 読み取り結果 | 設定 |
+|:--:|:--:|:--:|:--:|
+| <img src="docs/screens/03_detail.png" width="180"> | <img src="docs/screens/04_edit.png" width="180"> | <img src="docs/screens/06_scan_result.png" width="180"> | <img src="docs/screens/07_settings.png" width="180"> |
+| 要確認バナー、電話 / メール / 地図へのクイックアクション、読み取り元の表示 | Outlined フィールドと自動判定したタイムゾーンの根拠 | スキャン直後の確認画面。保存するまで永続化しない | 言語切替、CSV 一括出力、全削除 |
 
 ---
 
@@ -11,34 +39,62 @@ OCR と、独自のパーサーパイプラインを組み合わせることで�
 
 | 機能 | 概要 |
 |------|------|
-| 名刺スキャン | VNDocumentCameraViewController でカメラ撮影 → Vision OCR でテキスト認識 |
-| 自動情報抽出 | 氏名・会社・電話・メール・住所をスコアリングベースで自動分類 |
-| タイムゾーン推定 | 米国住所の郵便番号 / 市外局番から PST・MST・CST・EST を自動判定 |
-| 手動編集 | スキャン結果を Form UI で修正可能。Cancel で変更を破棄、Save で確定 |
-| CSV 出力 | RFC 4180 / UTF-8 BOM 形式で全カードを一括エクスポート（Excel・Numbers 対応） |
-| 日英対応 | システム言語に合わせて UI を日本語 / 英語で自動切替 |
-| 削除 Undo | 削除後 6 秒以内であればワンタップで復元。カード行スワイプでも削除可 |
-| OCR フィードバック | テキスト未検出・カメラエラー時にアラートで通知。処理中はオーバーレイで進捗表示 |
+| 名刺スキャン | 書類カメラ、または写真ライブラリの画像 → Vision OCR → 独自パーサーで項目分け |
+| 要確認フラグ | 書式を補正した電話番号、読み取れなかった名前・会社、郵便番号と市外局番で時間帯が食い違う名刺に「要確認」を付け、一覧・詳細・結果画面で一貫して表示。読み取り元の文字列も保持 |
+| タイムゾーン推定 | 米国住所の郵便番号（優先）/ 市外局番から PST・MST・CST・EST を判定。一覧と詳細に現地時刻と日本との時差 |
+| 一覧 | 名前・会社・メール検索、要確認 / 時間帯の絞り込み、並び替え、今週 / それ以前のグループ |
+| 詳細 / 編集 | `tel:` `mailto:` 地図へのクイックアクション、項目コピー、編集で変更した項目の要確認は自動解除 |
+| CSV 出力 | RFC 4180 / UTF-8 BOM / CRLF（Excel・Numbers 対応）。`needs_review` と `raw_value` 列付き |
+| 日英対応 | 端末に合わせる / 日本語 / English を設定で切替 |
+| 削除 Undo | 単体・複数・全削除を 6 秒以内なら復元 |
 
 ---
 
-## スクリーンショット
+## 技術的なポイント
 
-| カード一覧 | 編集画面 |
-|:-----------:|:--------:|
-| <img src="docs/screenshot_list.png" width="200"> | <img src="docs/screenshot_edit.png" width="200"> |
+### 1. OCR 後の多段パーサー
 
----
+Vision が返すのは座標付きのテキスト断片です。`CardParser` が次の順で名刺に組み立てます。
 
-## 技術スタック
+```
+OCR 断片
+  → 行の再構築      Y 座標でグループ化し、列の隙間（文字高さの 1.5 倍超）で 2 列レイアウトを分割
+  → AddressParser    住所らしい行を起点にブロックを成長・結合・採点し、最良ブロックを整形
+  → PhoneParser      正規表現 + NSDataDetector で番号を二重取得、ラベル（直通 / 代表 / 携帯）付与、FAX 除外
+  → NameParser       文字高さ・位置・TitleCase・メールアドレスとの一致をスコアリングして人名を選定
+  → ReviewFlagger    米国番号を +1 NXX-NXX-XXXX に整形し、要確認を付与
+```
 
-- **言語**: Swift 5.10
-- **UI**: SwiftUI
-- **OCR**: Vision / VisionKit (`VNRecognizeTextRequest`)
-- **カメラ**: `VNDocumentCameraViewController`
-- **並行処理**: Swift Concurrency（`async/await`、`Task.detached`）
-- **永続化**: Documents ディレクトリ（JSON ファイル・アトミック書き込み）
-- **最小 iOS**: 17.0
+キーワード判定は単語境界付きで、"Weber" が "web" に、"Repton" が "rep" に誤反応しないようにしています。
+
+### 2. 実名刺で測る精度評価
+
+パーサーは経験則の塊なので、改修で壊していないことを数字で確認できる仕組みを用意しました。
+
+1. DEBUG ビルドの設定画面から、直近のスキャンの **OCR 結果（テキストと座標）** をフィクスチャ JSON として書き出す（画像は含めない）
+2. `BCSTests/Fixtures/` に置き、期待値の誤りだけ手で直す
+3. `FixtureAccuracyTests` が全フィクスチャをパーサーに流し、項目別の正解率を出す
+
+```
+Fixture accuracy (20 fixtures)
+  name      17/20   85.0%
+  company   15/20   75.0%
+  ...
+Failures:
+  [paper_acme_20261016] name: expected "John Smith" / actual "Sales Manager"
+```
+
+### 3. タイムゾーン判定の落とし穴
+
+`TimeZone.abbreviation` は端末のロケールに依存し、日本語設定の iPhone では "EDT" ではなく "GMT-4" を返します。これで判定が全部空になる不具合を踏んだため、IANA 識別子の **標準時オフセット** から PST / MST / CST / EST を決める実装に変えました。郵便番号は「州コードの直後の 5 桁」を優先し、番地（10300 など）を郵便番号と誤認しないようにしています。
+
+### 4. Figma からのデザイン実装
+
+Figma で 7 画面と共通コンポーネントを設計し、Figma MCP で寸法・色・アイコン SVG を取得して SwiftUI に落としました。33 色のトークンと 37 個のアイコンは Asset Catalog に登録し、`M3` / `BCSTextStyle` / `BCSIcon` から型付きで参照します。
+
+### 5. 壊れない永続化
+
+保存形式は JSON です。項目を `ContactField`（値・読み取り元・要確認理由）に拡張した際も、旧形式のファイルをそのまま読める互換デコーダを用意し、読めないファイルは上書きせず退避します。
 
 ---
 
@@ -47,139 +103,44 @@ OCR と、独自のパーサーパイプラインを組み合わせることで�
 ```
 BCSApp
 └── RootView (TabView)
-    ├── ContentView          # カード一覧・操作 UI
-    │   ├── ScannerView      # カメラ → TextRecognizer → CardParser
-    │   └── EditCardView     # 手動編集（Save 時のみ保存）
-    └── SettingsView         # 言語設定（DEBUG ビルドでは開発用ツールも表示）
+    ├── CardListView         # 一覧 / 複数選択（検索・絞り込み・週グループ・FAB メニュー）
+    │   ├── CardDetailView   # 詳細（要確認バナー・クイックアクション）
+    │   │   └── CardEditView # 編集シート
+    │   └── ScanFlow         # FAB → ScannerView / 写真 → ScanResultView → CardStore.append
+    └── SettingsView         # 設定（DEBUG ビルドでは開発用ツールも表示）
 
-OCR
-  TextRecognizer       Vision の VNRecognizeTextRequest をラップ（カメラ・写真読み込みで共用）
-
-パーサーパイプライン（CardParser）
-  OCR テキスト群
-    → 行の再構築      Y 座標でグループ化し、列ギャップで分割
-    → AddressParser    住所ブロック検出・マルチライン結合
-    → PhoneParser      電話番号抽出・ラベル付与・重複除去
-    → NameParser       スコアリングによる人名候補選定
-
-共通ユーティリティ
-  ParserUtils.swift    normalizeSpace / isJobTitleLine / containsContactKeyword
-  TimeZoneResolver     ZIP・市外局番 → タイムゾーン変換（非同期）
-  Models.swift         ZipTimeZoneDB / AreaCodeTimeZoneDB（CSV 遅延ロード）
+OCR         TextRecognizer（Vision）
+Parsing     CardParser → AddressParser / PhoneParser / NameParser / ReviewFlagger
+Model       BusinessCard（ContactField）、CardStore（永続化・複数削除・Undo）
+TimeZone    TimeZoneResolver（ZIP / 市外局番 → TimeZoneResolution）、TimeZoneLookupTable（CSV）
+DesignSystem M3 / BCSTextStyle / BCSIcon / Components
 ```
 
----
+表示ロジック（検索・絞り込み・グループ分け・現地時刻・文言生成）は View から切り出し、ユニットテストで固定しています。
 
-## 技術的なこだわり
-
-### 1. OCR 後の多段パーサーパイプライン
-
-Vision OCR が返すテキストは座標付きの断片の集合です。このアプリでは以下の順で処理します。
-
-1. **行の再構築** — Y 座標・X 座標を基に断片を行に統合し、列のギャップも検出
-2. **住所検出** — `NSDataDetector` + 正規表現 + スコアリングで住所ブロックを特定。連続する行を縦方向にマージし、インデントされた続行行も回収
-3. **電話番号抽出** — 正規表現 2 パターン + `NSDataDetector` で二重取得し、ラベル（TEL / Mobile / Direct）と数字を対応付け
-4. **人名選定** — 文字高さ・Y 座標・TitleCase 判定・メールアドレスのヒントなどを総合したスコアで候補をランキング
-
-### 2. タイムゾーン推定の非同期化
-
-米国郵便番号 DB（`uszips.csv`・数万行）は起動時にバックグラウンドでプリロードします。
-タイムゾーン解決処理は `Task.detached` でメインスレッドを解放し、結果を `MainActor` で UI に反映します。
-
-```swift
-Task {
-    let updates = await Task.detached(priority: .utility) {
-        TimeZoneResolver.resolveUpdates(for: snapshot) // CSV lookup はここ（バックグラウンド）
-    }.value
-    // ここは MainActor — @State への書き込みが安全
-    for update in updates { ... }
-}
-```
 ---
 
 ## ファイル構成
 
 ```
 BCS/
-├── App/
-│   ├── BCSApp.swift            エントリーポイント
-│   └── RootView.swift          TabView ルート
-├── Views/
-│   ├── ContentView.swift       カード一覧・Undo・操作ボタン・アラート
-│   ├── CardSummaryView.swift   選択中カードの詳細
-│   ├── CardRowView.swift       一覧の1行
-│   ├── TimeZoneBadgeView.swift PST/MST/CST/EST バッジ
-│   ├── Theme.swift             配色・PillButtonStyle
-│   ├── EditCardView.swift      手動編集（Save 時のみ保存）
-│   ├── SettingsView.swift      言語設定（DEBUG では開発用ツールも）
-│   ├── ScannerView.swift       カメラ（VNDocumentCameraViewController）
-│   └── ShareSheet.swift        UIActivityViewController ラッパー
-├── OCR/
-│   ├── TextRecognizer.swift    Vision OCR ラッパー
-│   └── OCRTypes.swift          OCRItem / OCRLine
-├── Parsing/
-│   ├── CardParser.swift        OCR 断片 → BusinessCard（パイプライン本体）
-│   ├── AddressParser.swift     住所ブロック検出・結合・整形
-│   ├── PhoneParser.swift       電話番号抽出・ラベル付与
-│   ├── NameParser.swift        人名スコアリング
-│   └── ParserUtils.swift       KeywordMatcher などの共通ユーティリティ
-├── Model/
-│   ├── BusinessCard.swift      データモデル
-│   ├── CardStore.swift         永続化・選択・Undo
-│   └── AppSettings.swift       言語設定の永続化
-├── TimeZone/
-│   ├── TimeZoneResolver.swift  ZIP・市外局番 → PST/MST/CST/EST
-│   ├── TimeZoneLookupTable.swift CSV 由来の検索テーブル
-│   ├── uszips.csv              米国郵便番号 → タイムゾーン
-│   └── ac-tz.csv               米国市外局番 → タイムゾーン
-├── Support/
-│   ├── L10n.swift              日英ローカライズ
-│   └── CSVExporter.swift       CSV 生成（RFC 4180 / BOM / CRLF）
-├── DevTools/
-│   ├── CardFixture.swift       テスト用フィクスチャの JSON モデル
-│   └── FixtureRecorder.swift   直近の OCR 結果を保持（DEBUG のみ）
-├── Assets.xcassets
-└── InfoPlist.xcstrings         カメラ権限文言の日英訳
+├── App/            BCSApp, RootView
+├── DesignSystem/   M3Color, BCSTextStyle, BCSIcon, Components/
+├── Views/          CardList/, CardDetail/, CardEdit/, Scan/, Settings/, ScannerView, ShareSheet
+├── OCR/            TextRecognizer, OCRTypes
+├── Parsing/        CardParser, AddressParser, PhoneParser, NameParser, PhoneNormalizer, ReviewFlagger, ParserUtils
+├── Model/          BusinessCard, CardStore, AppSettings
+├── TimeZone/       TimeZoneResolver, TimeZoneLookupTable, uszips.csv, ac-tz.csv
+├── Support/        L10n, CSVExporter, CardListFilter, LocalTime
+├── DevTools/       CardFixture, FixtureRecorder（DEBUG のみ）
+└── Assets.xcassets M3/（Color Set）, Icons/（SVG）
 BCSTests/
-├── Fixtures/                   名刺ごとの OCR 結果 + 期待値（JSON）
-├── FixtureAccuracyTests.swift  全フィクスチャの項目別正解率
-├── FixtureEvaluator.swift      正解率の集計と正規化ルール
-├── CardParserTests.swift       パイプライン全体・行の再構築
-├── ParserUtilsTests.swift      キーワード判定（単語境界）
-├── PhoneParserTests.swift      電話番号抽出・FAX 除外・重複除去
-├── AddressParserTests.swift    住所行判定・複数行結合
-├── NameParserTests.swift       人名選定
-├── TimeZoneResolverTests.swift タイムゾーン判定・DB 読み込み
-└── CSVExporterTests.swift      CSV エスケープ・ヘッダー
+├── Fixtures/       実名刺の OCR 結果 + 期待値
+└── *Tests.swift    パーサー・モデル・ストア・一覧ロジック・文言・スキャン導線
+docs/
+├── screens/        画面画像
+└── superpowers/    設計書と実装計画
 ```
-
----
-
-## 精度の検証（フィクスチャ）
-
-パーサーの精度は、本物の名刺の OCR 結果を保存したフィクスチャで測ります。名刺画像は保存せず、
-Vision が返したテキストと座標、および期待値だけを JSON にします。
-
-1. DEBUG ビルドで設定タブを開き、「開発用」セクションを使う
-   - **写真から OCR してパース**: 写真ライブラリの画像をカメラを通さずに OCR する（再現性が高い）
-   - **直近のスキャンをフィクスチャとして書き出す**: カメラまたは写真から直近に処理した結果を JSON にして共有シートへ（AirDrop で Mac に送る）
-2. 受け取った JSON を `BCSTests/Fixtures/` に置く
-3. `expected` にはパーサーの現在の出力が入っているので、間違っている項目だけ正しい値に直す
-   - 項目を削除すると、その項目はチェック対象外になる
-   - `phones` は数字だけを比較、`address` は英数字だけを比較するので表記ゆれは無視される
-4. Xcode で Cmd+U。`FixtureAccuracyTests` が全フィクスチャを流し、ログに項目別の正解率を出す
-
-```
-Fixture accuracy (20 fixtures)
-  name      17/20   85.0%
-  company   15/20   75.0%
-  ...
-Failures:
-  [paper_acme_20261016_173000] name: expected "John Smith" / actual "Sales Manager"
-```
-
-`FixtureAccuracyTests.minimumAccuracy` の下限値は最初 0 になっています。フィクスチャが 20 枚程度そろったら
-基準値を設定し、以降の改修で下回ったらテストが失敗するようにしてください。
 
 ---
 
@@ -191,16 +152,13 @@ cd BCS
 open BCS.xcodeproj
 ```
 
-Xcode でスキームを選択し、実機または Simulator でビルドしてください。
-カメラを使用するため、実機での動作を推奨します。
-
-> **Required**: Xcode 16+ / iOS 17+
+Xcode 16 以降でスキーム `BCS` を選び、実機でビルドしてください（カメラを使うため）。テストは Cmd+U で実行できます。
 
 ---
 
 ## 今後の改善案
 
-- [ ] OCR 言語設定の追加（日本語名刺対応）
-- [ ] ダークモード対応
-- [x] パーサーのユニットテスト追加（`BCSTests`）
-- [ ] SwiftData への移行
+- [ ] 日本語名刺対応（OCR 言語設定と日本語向けパーサー）
+- [ ] カスタムカメラ（ガイド枠・自動撮影・検出チップ）
+- [ ] ダークモード（Color Set に Dark を追加するだけで済む構造）
+- [ ] SwiftData + iCloud 同期

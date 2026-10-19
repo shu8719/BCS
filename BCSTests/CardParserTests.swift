@@ -8,8 +8,8 @@ final class CardParserTests: XCTestCase {
         XCTAssertEqual(card.name, "John Smith")
         XCTAssertEqual(card.company, "ACME Electronics Inc.")
         XCTAssertEqual(card.email, "john.smith@acme.com")
-        XCTAssertEqual(card.phones.map { $0.number.filter(\.isNumber) }, ["4085551234"])
-        XCTAssertTrue(card.address.contains("CA 95110"), card.address)
+        XCTAssertEqual(card.phones.map(\.number), ["+1 408-555-1234"])
+        XCTAssertTrue(card.address.value.contains("CA 95110"), card.address.value)
     }
 
     func testSplitsTwoColumnRowIntoSeparateLines() {
@@ -34,8 +34,9 @@ final class CardParserTests: XCTestCase {
 
     func testReturnsEmptyCardForNoItems() {
         let card = CardParser().parse(items: [])
-        XCTAssertEqual(card.name, "")
-        XCTAssertEqual(card.company, "")
+        XCTAssertEqual(card.name.value, "")
+        XCTAssertEqual(card.company.value, "")
         XCTAssertTrue(card.phones.isEmpty)
+        XCTAssertEqual(card.name.reviewReason, .missing)   // spec §4 rule 2
     }
 }

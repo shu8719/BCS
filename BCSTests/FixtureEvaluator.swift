@@ -68,16 +68,16 @@ struct FixtureEvaluator {
             let card = parser.parse(items: fixture.ocrItems)
             let e = fixture.expected
             
-            check(.name,    fixture: fixture.name, expected: e.name,    actual: card.name,    normalize: Self.text)
-            check(.company, fixture: fixture.name, expected: e.company, actual: card.company, normalize: Self.text)
-            check(.email,   fixture: fixture.name, expected: e.email,   actual: card.email,   normalize: Self.text)
-            check(.address, fixture: fixture.name, expected: e.address, actual: card.address, normalize: Self.alphanumeric)
+            check(.name,    fixture: fixture.name, expected: e.name,    actual: card.name.value,    normalize: Self.text)
+            check(.company, fixture: fixture.name, expected: e.company, actual: card.company.value, normalize: Self.text)
+            check(.email,   fixture: fixture.name, expected: e.email,   actual: card.email.value,   normalize: Self.text)
+            check(.address, fixture: fixture.name, expected: e.address, actual: card.address.value, normalize: Self.alphanumeric)
             check(.phones,  fixture: fixture.name,
                   expected: e.phones.map { $0.joined(separator: " / ") },
                   actual: card.phones.map(\.number).joined(separator: " / "),
                   normalize: Self.phoneDigitSet)
             if let resolver {
-                let actual = resolver.resolve(for: card)?.meta.code ?? ""
+                let actual = resolver.resolve(for: card)?.zone?.rawValue ?? ""
                 check(.timeZone, fixture: fixture.name, expected: e.timeZoneCode, actual: actual,
                       normalize: { $0.trimmingCharacters(in: .whitespaces).uppercased() })
             }
@@ -96,9 +96,16 @@ struct FixtureEvaluator {
         s.lowercased().filter { $0.isLetter || $0.isNumber }
     }
     
-    /// "TEL: (408) 555-1234 / 650-555-0000" -> "4085551234|6505550000" (sorted set of digit strings)
+    /// "TEL: (408) 555-1234 / +1 650-555-0000" -> "4085551234|6505550000"
+    /// (sorted set of digit strings; a leading US country code 1 is dropped so
+    /// fixtures written before normalization still match).
     nonisolated private static func phoneDigitSet(_ s: String) -> String {
-        Set(s.split(separator: "/").map { $0.filter(\.isNumber) }.filter { !$0.isEmpty })
+        Set(s.split(separator: "/")
+            .map { piece -> String in
+                let digits = piece.filter(\.isNumber)
+                return (digits.count == 11 && digits.hasPrefix("1")) ? String(digits.dropFirst()) : digits
+            }
+            .filter { !$0.isEmpty })
             .sorted()
             .joined(separator: "|")
     }

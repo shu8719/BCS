@@ -35,9 +35,11 @@ final class NameParser {
         return cleanPersonName(emailName, company: company)
     }
     
-    func normalizeNameCompanyByEmailHints(_ result: inout BusinessCard, companyScore: (String) -> Int) {
-        guard !result.email.isEmpty else { return }
-        let hints = Set(nameHintsFromEmail(result.email))
+    /// Swaps name and company when the e-mail address shows the "company" line is really the person.
+    func normalizeNameCompanyByEmailHints(name: inout String, company: inout String, email: String,
+                                          companyScore: (String) -> Int) {
+        guard !email.isEmpty else { return }
+        let hints = Set(nameHintsFromEmail(email))
         guard hints.count >= 2 else { return }
         
         func hitCount(_ s: String) -> Int {
@@ -48,18 +50,18 @@ final class NameParser {
             return tokens.reduce(0) { $0 + (hints.contains($1) ? 1 : 0) }
         }
         
-        let nameHits = hitCount(result.name)
-        let companyHits = hitCount(result.company)
-        let companyLooksPerson = looksLikeEnglishPersonName(result.company)
-        let nameLooksCompany = companyScore(result.name) >= 4
+        let nameHits = hitCount(name)
+        let companyHits = hitCount(company)
+        let companyLooksPerson = looksLikeEnglishPersonName(company)
+        let nameLooksCompany = companyScore(name) >= 4
         
         if (companyHits >= 2 && companyHits > nameHits && companyLooksPerson)
             || (nameLooksCompany && companyLooksPerson && companyHits > 0) {
-            let oldName = result.name
-            result.name = cleanPersonName(result.company, company: oldName)
-            result.company = oldName
+            let oldName = name
+            name = cleanPersonName(company, company: oldName)
+            company = oldName
         } else {
-            result.name = cleanPersonName(result.name, company: result.company)
+            name = cleanPersonName(name, company: company)
         }
     }
     
