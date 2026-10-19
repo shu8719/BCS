@@ -196,8 +196,8 @@ struct ContentView: View {
 
     private func undoMessage(for operation: CardStore.UndoOperation) -> String {
         switch operation {
-        case .deleteSingle: return L10n.t(.undoDeletedMessage, lang: settings.language)
-        case .deleteAll:    return L10n.t(.undoResetMessage,   lang: settings.language)
+        case .deleteSingle, .deleteMany: return L10n.t(.undoDeletedMessage, lang: settings.language)
+        case .deleteAll:                 return L10n.t(.undoResetMessage,   lang: settings.language)
         }
     }
 

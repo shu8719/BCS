@@ -1,21 +1,28 @@
 import SwiftUI
 
+/// Owns the card list: persistence (JSON in the app's Documents directory), time zone
+/// resolution, multi-delete with a short Undo window, and review-state changes.
 @MainActor
 @Observable
 final class CardStore {
     var cards: [BusinessCard] = []
+    /// Legacy selection used by the old list screen; removed with it.
     var selectedIndex: Int? = nil
     private(set) var undoState: UndoState? = nil
     private var undoToken: UUID? = nil
 
+    private let directory: URL
     private let legacyStorageKey = "business_cards_state_v1"
 
     private var jsonURL: URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("business_cards.json")
+        directory.appendingPathComponent("business_cards.json")
     }
 
-    enum UndoOperation { case deleteSingle, deleteAll }
+    enum UndoOperation: Equatable {
+        case deleteSingle
+        case deleteMany(Int)
+        case deleteAll
+    }
 
     struct UndoState {
         let cards: [BusinessCard]
@@ -23,11 +30,22 @@ final class CardStore {
         let operation: UndoOperation
     }
 
-    init() {
+    nonisolated static var documentsDirectory: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    }
+
+    init(directory: URL = CardStore.documentsDirectory) {
+        self.directory = directory
         load()
         TimeZoneLookupTable.bundledZip.preload()
         TimeZoneLookupTable.bundledAreaCode.preload()
         resolveTimeZonesAsync(for: cards)
+    }
+
+    // MARK: - Reading
+
+    func card(id: UUID) -> BusinessCard? {
+        cards.first { $0.id == id }
     }
 
     var selectedCard: BusinessCard? {
@@ -53,6 +71,8 @@ final class CardStore {
         )
     }
 
+    // MARK: - Writing
+
     func append(_ card: BusinessCard) {
         cards.append(card)
         selectedIndex = cards.count - 1
@@ -60,11 +80,27 @@ final class CardStore {
         resolveTimeZonesAsync(for: [card])
     }
 
+    /// Replaces the card with the same id, then re-resolves its time zone.
+    func update(_ card: BusinessCard) {
+        guard let idx = cards.firstIndex(where: { $0.id == card.id }) else { return }
+        cards[idx] = card
+        save()
+        resolveTimeZonesAsync(for: [card])
+    }
+
+    func markAllReviewed(id: UUID) {
+        guard let idx = cards.firstIndex(where: { $0.id == id }) else { return }
+        cards[idx].markAllReviewed()
+        save()
+    }
+
     func select(at index: Int) {
         guard cards.indices.contains(index) else { return }
         selectedIndex = index
         save()
     }
+
+    // MARK: - Deleting (each kind can be undone for 6 seconds)
 
     func deleteSelected() {
         guard let idx = selectedIndex, cards.indices.contains(idx) else { return }
@@ -82,6 +118,20 @@ final class CardStore {
                 selectedIndex = sel - 1
             }
         }
+        save()
+    }
+
+    func delete(id: UUID) {
+        guard let idx = cards.firstIndex(where: { $0.id == id }) else { return }
+        delete(at: idx)
+    }
+
+    func delete(ids: Set<UUID>) {
+        let count = cards.filter { ids.contains($0.id) }.count
+        guard count > 0 else { return }
+        saveUndo(operation: .deleteMany(count))
+        cards.removeAll { ids.contains($0.id) }
+        selectedIndex = cards.isEmpty ? nil : 0
         save()
     }
 
@@ -116,16 +166,17 @@ final class CardStore {
     }
 
     private struct PersistedState: Codable {
-        static let currentVersion = 1
+        static let currentVersion = 2
 
         // Optional so files written before versioning (no "version" key) still decode.
         let version: Int?
         let cards: [BusinessCard]
+        /// Written by v1; no longer used.
         let selectedIndex: Int?
     }
 
     private func save() {
-        let state = PersistedState(version: PersistedState.currentVersion, cards: cards, selectedIndex: selectedIndex)
+        let state = PersistedState(version: PersistedState.currentVersion, cards: cards, selectedIndex: nil)
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: jsonURL, options: .atomic)
     }
@@ -162,8 +213,7 @@ final class CardStore {
 
     private func setAsideUnreadableStateFile(reason: Error) {
         let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
-        let backupURL = jsonURL.deletingLastPathComponent()
-            .appendingPathComponent("business_cards.unreadable-\(stamp).json")
+        let backupURL = directory.appendingPathComponent("business_cards.unreadable-\(stamp).json")
         do {
             try FileManager.default.moveItem(at: jsonURL, to: backupURL)
             print("CardStore: could not read saved cards (\(reason)); kept file as \(backupURL.lastPathComponent)")
