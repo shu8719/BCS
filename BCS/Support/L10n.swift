@@ -54,6 +54,9 @@ struct L10n {
         // Scan result (06) and scan entry
         case scanResultTitle, readFieldsCount, tapToFix, bannerNormalizedPhone, bannerMissing
         case retake, saveCard, scanWithCamera, scanFromPhoto, tzFromZipShort, tzFromAreaCodeShort, photoLoadFailed
+
+        // Settings (07)
+        case sectionDisplay, sectionData, sectionDeveloper, exportCSVTitle, cardsCount, deleteAllCards
     }
 
     /// Formats a key that contains %d / %@ placeholders.
@@ -191,6 +194,13 @@ struct L10n {
             case .tzFromZipShort: return "郵便番号 %@ からタイムゾーンを判定"
             case .tzFromAreaCodeShort: return "市外局番 %@ からタイムゾーンを判定"
             case .photoLoadFailed: return "画像を読み込めませんでした"
+
+            case .sectionDisplay: return "表示"
+            case .sectionData: return "データ"
+            case .sectionDeveloper: return "開発用（DEBUG ビルドのみ）"
+            case .exportCSVTitle: return "CSVで書き出す"
+            case .cardsCount: return "%d件の名刺"
+            case .deleteAllCards: return "すべての名刺を削除"
             }
             
         case .english, .system:
@@ -314,6 +324,13 @@ struct L10n {
             case .tzFromZipShort: return "Time zone from ZIP %@"
             case .tzFromAreaCodeShort: return "Time zone from area code %@"
             case .photoLoadFailed: return "Could not load the image"
+
+            case .sectionDisplay: return "Display"
+            case .sectionData: return "Data"
+            case .sectionDeveloper: return "Developer (DEBUG only)"
+            case .exportCSVTitle: return "Export CSV"
+            case .cardsCount: return "%d cards"
+            case .deleteAllCards: return "Delete all cards"
             }
         }
     }

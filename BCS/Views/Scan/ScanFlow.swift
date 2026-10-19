@@ -22,8 +22,8 @@ final class ScanFlow {
     private let parser = CardParser()
     private let resolver: TimeZoneResolver
     
-    init(resolver: TimeZoneResolver = TimeZoneResolver()) {
-        self.resolver = resolver
+    init(resolver: TimeZoneResolver? = nil) {
+        self.resolver = resolver ?? TimeZoneResolver()
     }
     
     var isShowingResult: Bool {
