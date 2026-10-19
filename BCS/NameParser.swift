@@ -189,12 +189,6 @@ final class NameParser {
         return best.1
     }
     
-    private func looksLikeEnglishPersonName(_ s: String) -> Bool {
-        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.range(of: #"^[\p{L}\p{M}\.'\-]+\s+[\p{L}\p{M}\.'\-]+(\s+[\p{L}\p{M}\.'\-]+){0,2}$"#,
-                       options: .regularExpression) != nil
-    }
-    
     private func looksLikeTitleCasePersonName(_ s: String) -> Bool {
         let t = normalizeSpace(s)
         let tokens = t.split(separator: " ").map(String.init)
@@ -252,13 +246,6 @@ final class NameParser {
             "technical support"
         ]
         return keys.contains(where: { lower.contains($0) })
-    }
-    
-    private func isAllCapsLikeLogo(_ s: String) -> Bool {
-        let letters = s.filter { $0.isLetter }
-        guard letters.count >= 4 else { return false }
-        let upper = letters.filter { String($0) == String($0).uppercased() }.count
-        return Double(upper) / Double(letters.count) > 0.9
     }
     
     private func domainKeyFromEmail(_ email: String) -> String {

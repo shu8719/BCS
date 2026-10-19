@@ -2,7 +2,7 @@ import XCTest
 @testable import BCS
 
 final class TimeZoneResolverTests: XCTestCase {
-    private var repoDatabases: (zip: ZipTimeZoneDB, area: AreaCodeTimeZoneDB) { repoTimeZoneDatabases() }
+    private var repoDatabases: (zip: TimeZoneLookupTable, area: TimeZoneLookupTable) { repoTimeZoneDatabases() }
 
     func testCodeMappingDoesNotDependOnLocaleAbbreviations() {
         XCTAssertEqual(TimeZoneResolver.code(forTimeZoneIdentifier: "America/Los_Angeles"), "PST")

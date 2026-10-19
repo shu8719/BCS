@@ -173,13 +173,6 @@ final class CardParser {
         return key.prefix(1).uppercased() + key.dropFirst()
     }
     
-    private func isAllCapsLikeLogo(_ s: String) -> Bool {
-        let letters = s.filter { $0.isLetter }
-        guard letters.count >= 4 else { return false }
-        let upper = letters.filter { String($0) == String($0).uppercased() }.count
-        return Double(upper) / Double(letters.count) > 0.9
-    }
-    
     // MARK: - Address choice
     
     private func isBetterAddressCandidate(_ candidate: String, than current: String) -> Bool {

@@ -13,13 +13,13 @@ func ocrItem(_ text: String, y: CGFloat, height: CGFloat = 0.03, x: CGFloat = 0.
 }
 
 /// The CSVs shipped in the app bundle, loaded from the repo so tests do not depend on Bundle.main.
-func repoTimeZoneDatabases() -> (zip: ZipTimeZoneDB, area: AreaCodeTimeZoneDB) {
+func repoTimeZoneDatabases() -> (zip: TimeZoneLookupTable, area: TimeZoneLookupTable) {
     // resolvingSymlinksInPath keeps this working when the test sources are symlinked elsewhere.
     let bcs = URL(fileURLWithPath: #filePath).resolvingSymlinksInPath()
         .deletingLastPathComponent().deletingLastPathComponent()
         .appendingPathComponent("BCS")
-    return (ZipTimeZoneDB(fileURL: bcs.appendingPathComponent("uszips.csv")),
-            AreaCodeTimeZoneDB(fileURL: bcs.appendingPathComponent("ac-tz.csv")))
+    return (TimeZoneLookupTable.zip(fileURL: bcs.appendingPathComponent("uszips.csv")),
+            TimeZoneLookupTable.areaCode(fileURL: bcs.appendingPathComponent("ac-tz.csv")))
 }
 
 func repoTimeZoneResolver() -> TimeZoneResolver {

@@ -193,11 +193,6 @@ final class AddressParser {
         return (text, box)
     }
     
-    func isWeakAddress(_ s: String) -> Bool {
-        let t = normalizeSpace(s)
-        return t.isEmpty || isAddressLabelOnly(t) || t.count <= 8
-    }
-    
     func recoverAddress(from lines: [OCRLine]) -> String {
         guard !lines.isEmpty else { return "" }
         let ordered = lines.sorted { $0.box.midY > $1.box.midY }
@@ -392,11 +387,6 @@ final class AddressParser {
         }
         
         return false
-    }
-    
-    private func looksLikeEnglishPersonName(_ s: String) -> Bool {
-        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.range(of: #"^[\p{L}\p{M}\.'\-]+\s+[\p{L}\p{M}\.'\-]+(\s+[\p{L}\p{M}\.'\-]+){0,2}$"#, options: .regularExpression) != nil
     }
     
     private func isAddressLabelOnly(_ line: String) -> Bool {

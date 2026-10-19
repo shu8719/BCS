@@ -63,3 +63,18 @@ private let contactKeywordMatcher = KeywordMatcher([
 func containsContactKeyword(_ lower: String) -> Bool {
     contactKeywordMatcher.matches(lower)
 }
+
+/// "ACME ELECTRONICS": at least four letters and more than 90% of them upper case.
+func isAllCapsLikeLogo(_ s: String) -> Bool {
+    let letters = s.filter { $0.isLetter }
+    guard letters.count >= 4 else { return false }
+    let upper = letters.filter { String($0) == String($0).uppercased() }.count
+    return Double(upper) / Double(letters.count) > 0.9
+}
+
+/// Two to four tokens made only of letters, marks, dots, apostrophes and hyphens: "John Smith", "Mary-Ann O'Neil".
+func looksLikeEnglishPersonName(_ s: String) -> Bool {
+    let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+    return t.range(of: #"^[\p{L}\p{M}\.'\-]+\s+[\p{L}\p{M}\.'\-]+(\s+[\p{L}\p{M}\.'\-]+){0,2}$"#,
+                   options: .regularExpression) != nil
+}

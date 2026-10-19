@@ -25,8 +25,8 @@ final class CardStore {
 
     init() {
         load()
-        ZipTimeZoneDB.shared.preload()
-        AreaCodeTimeZoneDB.shared.preload()
+        TimeZoneLookupTable.bundledZip.preload()
+        TimeZoneLookupTable.bundledAreaCode.preload()
         resolveTimeZonesAsync(for: cards)
     }
 

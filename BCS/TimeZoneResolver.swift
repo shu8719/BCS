@@ -15,10 +15,10 @@ struct TimeZoneUpdate {
 /// Maps a US business card to PST / MST / CST / EST using the ZIP (preferred) or the phone area code.
 /// Databases are injectable so tests can load the CSVs from the repository instead of Bundle.main.
 struct TimeZoneResolver {
-    var zipDB: ZipTimeZoneDB
-    var areaDB: AreaCodeTimeZoneDB
+    var zipDB: TimeZoneLookupTable
+    var areaDB: TimeZoneLookupTable
 
-    init(zipDB: ZipTimeZoneDB = .shared, areaDB: AreaCodeTimeZoneDB = .shared) {
+    init(zipDB: TimeZoneLookupTable = .bundledZip, areaDB: TimeZoneLookupTable = .bundledAreaCode) {
         self.zipDB = zipDB
         self.areaDB = areaDB
     }

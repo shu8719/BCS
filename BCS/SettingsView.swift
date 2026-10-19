@@ -85,7 +85,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             
-            Text("タイムゾーン DB: ZIP \(ZipTimeZoneDB.shared.entryCount) 件 / 市外局番 \(AreaCodeTimeZoneDB.shared.entryCount) 件")
+            Text("タイムゾーン DB: ZIP \(TimeZoneLookupTable.bundledZip.entryCount) 件 / 市外局番 \(TimeZoneLookupTable.bundledAreaCode.entryCount) 件")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         } header: {
