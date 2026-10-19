@@ -20,20 +20,32 @@ final class CSVExporterTests: XCTestCase {
     func testHeaderFollowsLanguage() {
         let en = CSVExporter.makeCSV(cards: [], lang: .english)
         let ja = CSVExporter.makeCSV(cards: [], lang: .japanese)
-        XCTAssertEqual(en.dropFirst(), "Name,Company,Address,Phone,Email,Time Zone")
-        XCTAssertEqual(ja.dropFirst(), "名前,会社,住所,電話,メール,タイムゾーン")
+        XCTAssertEqual(en.dropFirst(), "Name,Company,Address,Phone,Email,Time Zone,Needs review,Raw value")
+        XCTAssertEqual(ja.dropFirst(), "名前,会社,住所,電話,メール,タイムゾーン,要確認,読み取り元")
     }
 
     func testEscapesCommasQuotesAndNewlines() {
         let c = card(name: "Smith, John", company: "Say \"Hi\" Inc.", address: "Line 1\nLine 2")
         let row = CSVExporter.makeCSV(cards: [c], lang: .english).components(separatedBy: "\r\n")[1]
-        XCTAssertEqual(row, "\"Smith, John\",\"Say \"\"Hi\"\" Inc.\",\"Line 1\nLine 2\",,,")
+        XCTAssertEqual(row, "\"Smith, John\",\"Say \"\"Hi\"\" Inc.\",\"Line 1\nLine 2\",,,,,")
     }
 
     func testJoinsPhonesWithSlash() {
         let c = card(name: "A", phones: ["TEL: 408-555-1234", "M: 650-555-0000"], tz: "PST")
         let row = CSVExporter.makeCSV(cards: [c], lang: .english).components(separatedBy: "\r\n")[1]
-        XCTAssertEqual(row, "A,ACME,,TEL: 408-555-1234 / M: 650-555-0000,,PST")
+        XCTAssertEqual(row, "A,ACME,,TEL: 408-555-1234 / M: 650-555-0000,,PST,,")
+    }
+
+    func testAppendsReviewColumns() {
+        var c = card(name: "A")
+        c.phones = [LabeledNumber(label: .direct, field: ContactField("+1 407-555-0173", rawValue: "D: 407-555.0173", reviewReason: .normalized))]
+        let row = CSVExporter.makeCSV(cards: [c], lang: .english).components(separatedBy: "\r\n")[1]
+        XCTAssertEqual(row, "A,ACME,,+1 407-555-0173,,,TRUE,D: 407-555.0173")
+    }
+
+    func testReviewColumnsEmptyWhenClean() {
+        let row = CSVExporter.makeCSV(cards: [card(name: "A")], lang: .english).components(separatedBy: "\r\n")[1]
+        XCTAssertTrue(row.hasSuffix(",,"), row)
     }
 
     func testWritesTemporaryFile() throws {

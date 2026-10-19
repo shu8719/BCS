@@ -26,6 +26,7 @@ struct L10n {
         case scanFailedTitle, scanFailedMessage
 
         case exportCSV
+        case needsReview, rawValue
     }
     
     /// Maps `.system` to the concrete language the device prefers.
@@ -84,6 +85,8 @@ struct L10n {
             case .scanFailedMessage: return "もう一度お試しください。"
 
             case .exportCSV: return "CSV出力"
+            case .needsReview: return "要確認"
+            case .rawValue: return "読み取り元"
             }
             
         case .english, .system:
@@ -133,6 +136,8 @@ struct L10n {
             case .scanFailedMessage: return "Please try again."
 
             case .exportCSV: return "Export CSV"
+            case .needsReview: return "Needs review"
+            case .rawValue: return "Raw value"
             }
         }
     }
