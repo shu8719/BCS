@@ -25,3 +25,8 @@ Pods/
 
 # Exported card data (contains real contacts)
 /business_cards_*.csv
+
+# Local notes and AI tooling (kept out of the repository)
+private-notes/
+.claude/
+.superpowers/
