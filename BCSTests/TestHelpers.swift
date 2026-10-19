@@ -17,7 +17,7 @@ func repoTimeZoneDatabases() -> (zip: TimeZoneLookupTable, area: TimeZoneLookupT
     // resolvingSymlinksInPath keeps this working when the test sources are symlinked elsewhere.
     let bcs = URL(fileURLWithPath: #filePath).resolvingSymlinksInPath()
         .deletingLastPathComponent().deletingLastPathComponent()
-        .appendingPathComponent("BCS")
+        .appendingPathComponent("BCS").appendingPathComponent("TimeZone")
     return (TimeZoneLookupTable.zip(fileURL: bcs.appendingPathComponent("uszips.csv")),
             TimeZoneLookupTable.areaCode(fileURL: bcs.appendingPathComponent("ac-tz.csv")))
 }

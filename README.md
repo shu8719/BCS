@@ -101,38 +101,56 @@ Task {
 
 ```
 BCS/
-├── BCSApp.swift            エントリーポイント
-├── RootView.swift          TabView ルート
-├── ContentView.swift       カード一覧・Undo・エクスポート
-├── EditCardView.swift      カード手動編集
-├── SettingsView.swift      言語設定
-├── ScannerView.swift       カメラ（VNDocumentCameraViewController）
-├── TextRecognizer.swift    Vision OCR ラッパー
-├── CardParser.swift        OCR 断片 → BusinessCard（パイプライン本体）
-├── CardFixture.swift       テスト用フィクスチャの JSON モデル
-├── FixtureRecorder.swift   直近の OCR 結果を保持（DEBUG のみ）
-├── AddressParser.swift     住所ブロック検出・結合
-├── PhoneParser.swift       電話番号抽出・ラベル付与
-├── NameParser.swift        人名スコアリング
-├── ParserUtils.swift       パーサー共通ユーティリティ
-├── TimeZoneResolver.swift  タイムゾーン解決（非同期）
-├── Models.swift            データモデル・CSV DB
-├── AppSettings.swift       言語設定の永続化
-├── L10n.swift              日英ローカライズ
-├── OCRTypes.swift          OCRItem / OCRLine 型定義
-├── ShareSheet.swift        UIActivityViewController ラッパー
-├── uszips.csv              米国郵便番号 → タイムゾーン DB
-└── ac-tz.csv               米国市外局番 → タイムゾーン DB
+├── App/
+│   ├── BCSApp.swift            エントリーポイント
+│   └── RootView.swift          TabView ルート
+├── Views/
+│   ├── ContentView.swift       カード一覧・Undo・操作ボタン・アラート
+│   ├── CardSummaryView.swift   選択中カードの詳細
+│   ├── CardRowView.swift       一覧の1行
+│   ├── TimeZoneBadgeView.swift PST/MST/CST/EST バッジ
+│   ├── Theme.swift             配色・PillButtonStyle
+│   ├── EditCardView.swift      手動編集（Save 時のみ保存）
+│   ├── SettingsView.swift      言語設定（DEBUG では開発用ツールも）
+│   ├── ScannerView.swift       カメラ（VNDocumentCameraViewController）
+│   └── ShareSheet.swift        UIActivityViewController ラッパー
+├── OCR/
+│   ├── TextRecognizer.swift    Vision OCR ラッパー
+│   └── OCRTypes.swift          OCRItem / OCRLine
+├── Parsing/
+│   ├── CardParser.swift        OCR 断片 → BusinessCard（パイプライン本体）
+│   ├── AddressParser.swift     住所ブロック検出・結合・整形
+│   ├── PhoneParser.swift       電話番号抽出・ラベル付与
+│   ├── NameParser.swift        人名スコアリング
+│   └── ParserUtils.swift       KeywordMatcher などの共通ユーティリティ
+├── Model/
+│   ├── BusinessCard.swift      データモデル
+│   ├── CardStore.swift         永続化・選択・Undo
+│   └── AppSettings.swift       言語設定の永続化
+├── TimeZone/
+│   ├── TimeZoneResolver.swift  ZIP・市外局番 → PST/MST/CST/EST
+│   ├── TimeZoneLookupTable.swift CSV 由来の検索テーブル
+│   ├── uszips.csv              米国郵便番号 → タイムゾーン
+│   └── ac-tz.csv               米国市外局番 → タイムゾーン
+├── Support/
+│   ├── L10n.swift              日英ローカライズ
+│   └── CSVExporter.swift       CSV 生成（RFC 4180 / BOM / CRLF）
+├── DevTools/
+│   ├── CardFixture.swift       テスト用フィクスチャの JSON モデル
+│   └── FixtureRecorder.swift   直近の OCR 結果を保持（DEBUG のみ）
+├── Assets.xcassets
+└── InfoPlist.xcstrings         カメラ権限文言の日英訳
 BCSTests/
-├── Fixtures/                 名刺ごとの OCR 結果 + 期待値（JSON）
-├── FixtureAccuracyTests.swift 全フィクスチャの項目別正解率
-├── FixtureEvaluator.swift    正解率の集計と正規化ルール
-├── CardParserTests.swift     パイプライン全体
-├── ParserUtilsTests.swift    キーワード判定（単語境界）
-├── PhoneParserTests.swift    電話番号抽出・FAX 除外・重複除去
-├── AddressParserTests.swift  住所行判定・複数行結合
-├── NameParserTests.swift     人名選定
-└── TimeZoneResolverTests.swift タイムゾーン更新・クリア
+├── Fixtures/                   名刺ごとの OCR 結果 + 期待値（JSON）
+├── FixtureAccuracyTests.swift  全フィクスチャの項目別正解率
+├── FixtureEvaluator.swift      正解率の集計と正規化ルール
+├── CardParserTests.swift       パイプライン全体・行の再構築
+├── ParserUtilsTests.swift      キーワード判定（単語境界）
+├── PhoneParserTests.swift      電話番号抽出・FAX 除外・重複除去
+├── AddressParserTests.swift    住所行判定・複数行結合
+├── NameParserTests.swift       人名選定
+├── TimeZoneResolverTests.swift タイムゾーン判定・DB 読み込み
+└── CSVExporterTests.swift      CSV エスケープ・ヘッダー
 ```
 
 ---
