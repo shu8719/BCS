@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Card list screen: summary of the selected card, the list, and the scan / edit / export actions.
 struct ContentView: View {
     @EnvironmentObject private var settings: AppSettings
     @Environment(CardStore.self) private var store
@@ -12,11 +13,6 @@ struct ContentView: View {
     @State private var activeAlert: ActiveAlert?
     @State private var isProcessing = false
 
-    private let bgTop      = Color(red: 0.95, green: 0.97, blue: 1.00)
-    private let bgBottom   = Color(red: 0.98, green: 0.95, blue: 0.96)
-    private let accent     = Color(red: 0.16, green: 0.46, blue: 0.86)
-    private let accentSoft = Color(red: 0.84, green: 0.90, blue: 1.00)
-
     private enum ActiveAlert {
         case deleteSelected, resetAll, scanEmpty, scanFailed
     }
@@ -28,7 +24,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: [bgTop, bgBottom], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: [Theme.bgTop, Theme.bgBottom], startPoint: .topLeading, endPoint: .bottomTrailing)
                 .ignoresSafeArea()
 
             List {
@@ -36,14 +32,14 @@ struct ContentView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 0, trailing: 20))
-                summaryCard
+                CardSummaryView(card: store.selectedCard ?? BusinessCard())
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 10, trailing: 20))
                 if !store.cards.isEmpty {
                     ForEach(Array(store.cards.enumerated()), id: \.element.id) { idx, item in
                         Button { store.select(at: idx) } label: {
-                            cardRow(item, isSelected: idx == store.selectedIndex)
+                            CardRowView(card: item, isSelected: idx == store.selectedIndex)
                         }
                         .buttonStyle(.plain)
                         .listRowBackground(Color.clear)
@@ -126,71 +122,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Alerts
-
-    private func alertTitle(for alert: ActiveAlert) -> String {
-        switch alert {
-        case .deleteSelected: return L10n.t(.deleteSelectedTitle, lang: settings.language)
-        case .resetAll:       return L10n.t(.resetAllTitle,       lang: settings.language)
-        case .scanEmpty:      return L10n.t(.scanEmptyTitle,      lang: settings.language)
-        case .scanFailed:     return L10n.t(.scanFailedTitle,     lang: settings.language)
-        }
-    }
-
-    private func alertMessage(for alert: ActiveAlert) -> String {
-        switch alert {
-        case .deleteSelected: return L10n.t(.deleteSelectedMessage, lang: settings.language)
-        case .resetAll:       return L10n.t(.resetAllMessage,       lang: settings.language)
-        case .scanEmpty:      return L10n.t(.scanEmptyMessage,      lang: settings.language)
-        case .scanFailed:     return L10n.t(.scanFailedMessage,     lang: settings.language)
-        }
-    }
-
-    // MARK: - Info rows
-
-    private func infoRow(_ title: String, _ value: String, iconAsset: String, badge: TimeZoneBadge? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                Image(iconAsset)
-                    .resizable()
-                    .renderingMode(.original)
-                    .scaledToFit()
-                    .frame(width: 16, height: 16)
-                Text(title)
-                    .font(.custom("AvenirNext-Medium", size: 11))
-                    .foregroundStyle(.secondary)
-            }
-            if let badge {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(value.isEmpty ? "Unknown" : value)
-                        .font(.custom("AvenirNext-Regular", size: 16))
-                        .foregroundStyle(.primary)
-                        .layoutPriority(1)
-                    Spacer(minLength: 4)
-                    timeZoneBadge(badge)
-                }
-            } else {
-                Text(value.isEmpty ? "Unknown" : value)
-                    .font(.custom("AvenirNext-Regular", size: 16))
-                    .foregroundStyle(.primary)
-            }
-        }
-    }
-
-    private func displayPhones(_ phones: [LabeledNumber]) -> String {
-        phones.isEmpty ? "" : phones.map(\.number).joined(separator: " / ")
-    }
-
-    private var currentCard: BusinessCard { store.selectedCard ?? BusinessCard() }
-
-    private func displayTitle(_ card: BusinessCard) -> String {
-        if !card.name.isEmpty    { return card.name }
-        if !card.company.isEmpty { return card.company }
-        if !card.email.isEmpty   { return card.email }
-        return "Unknown"
-    }
-
-    // MARK: - Header / Summary
+    // MARK: - Header / empty state
 
     private var headerView: some View {
         HStack(alignment: .bottom) {
@@ -198,7 +130,7 @@ struct ContentView: View {
                 Text(L10n.t(.title, lang: settings.language))
                     .font(.custom("AvenirNext-DemiBold", size: 32))
                     .foregroundStyle(.primary)
-                Text(cardCountText())
+                Text(cardCountText)
                     .font(.custom("AvenirNext-Regular", size: 14))
                     .foregroundStyle(.secondary)
             }
@@ -206,29 +138,12 @@ struct ContentView: View {
         }
     }
 
-    private func cardCountText() -> String {
+    private var cardCountText: String {
         let count = store.cards.count
         switch L10n.resolve(settings.language) {
         case .japanese:         return "\(count)件"
         case .english, .system: return "\(count) cards"
         }
-    }
-
-    private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            infoRow(L10n.t(.name,    lang: settings.language), currentCard.name,                  iconAsset: "IconPerson")
-            infoRow(L10n.t(.company, lang: settings.language), currentCard.company,               iconAsset: "IconBuilding")
-            infoRow(L10n.t(.phone,   lang: settings.language), displayPhones(currentCard.phones), iconAsset: "IconPhone")
-            infoRow(L10n.t(.email,   lang: settings.language), currentCard.email,                 iconAsset: "IconEmail")
-            infoRow(L10n.t(.address, lang: settings.language), currentCard.address,               iconAsset: "IconMap", badge: currentTimeZoneBadge)
-        }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.white.opacity(0.75))
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.6), lineWidth: 1))
-                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 8)
-        )
     }
 
     private var emptyState: some View {
@@ -242,38 +157,25 @@ struct ContentView: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                .foregroundStyle(accent.opacity(0.2))
+                .foregroundStyle(Theme.accent.opacity(0.2))
         )
-    }
-
-    private func cardRow(_ card: BusinessCard, isSelected: Bool) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(displayTitle(card))
-                    .font(.custom("AvenirNext-DemiBold", size: 16))
-                    .foregroundStyle(.primary)
-                if !card.company.isEmpty {
-                    Text(card.company)
-                        .font(.custom("AvenirNext-Regular", size: 12))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-            if isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(accent)
-            }
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(isSelected ? accentSoft.opacity(0.8) : Color.white.opacity(0.7))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(isSelected ? accent.opacity(0.4) : Color.white.opacity(0.6), lineWidth: 1))
-        )
-        .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 4)
     }
 
     // MARK: - Bottom bar
+
+    private var bottomBar: some View {
+        VStack(spacing: 10) {
+            if store.undoState != nil { undoBar }
+            actionButtons
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .background(
+            LinearGradient(colors: [Theme.bgBottom.opacity(0.0), Theme.bgBottom.opacity(0.95)], startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
+        )
+    }
 
     private var undoBar: some View {
         HStack(spacing: 12) {
@@ -285,7 +187,7 @@ struct ContentView: View {
                 Button(L10n.t(.undo, lang: settings.language)) {
                     store.restoreUndo()
                 }
-                .buttonStyle(PillButtonStyle(background: accentSoft, foreground: accent))
+                .buttonStyle(PillButtonStyle(background: Theme.accentSoft, foreground: Theme.accent))
             }
         }
         .padding(12)
@@ -306,12 +208,12 @@ struct ContentView: View {
                     scanDraft = BusinessCard()
                     showScanner = true
                 }
-                .buttonStyle(PillButtonStyle(background: accent, foreground: .white))
+                .buttonStyle(PillButtonStyle(background: Theme.accent, foreground: .white))
 
                 Button(L10n.t(.edit, lang: settings.language)) {
                     showEditSheet = true
                 }
-                .buttonStyle(PillButtonStyle(background: Color.white.opacity(0.9), foreground: accent))
+                .buttonStyle(PillButtonStyle(background: Color.white.opacity(0.9), foreground: Theme.accent))
                 .disabled(!store.hasSelection)
 
                 Button {
@@ -326,7 +228,7 @@ struct ContentView: View {
                         Text(L10n.t(.exportCSV, lang: settings.language))
                     }
                 }
-                .buttonStyle(PillButtonStyle(background: Color.white.opacity(0.9), foreground: accent))
+                .buttonStyle(PillButtonStyle(background: Color.white.opacity(0.9), foreground: Theme.accent))
                 .disabled(store.cards.isEmpty)
             }
 
@@ -346,31 +248,23 @@ struct ContentView: View {
         }
     }
 
-    private var bottomBar: some View {
-        VStack(spacing: 10) {
-            if store.undoState != nil { undoBar }
-            actionButtons
+    // MARK: - Alerts
+
+    private func alertTitle(for alert: ActiveAlert) -> String {
+        switch alert {
+        case .deleteSelected: return L10n.t(.deleteSelectedTitle, lang: settings.language)
+        case .resetAll:       return L10n.t(.resetAllTitle,       lang: settings.language)
+        case .scanEmpty:      return L10n.t(.scanEmptyTitle,      lang: settings.language)
+        case .scanFailed:     return L10n.t(.scanFailedTitle,     lang: settings.language)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-        .padding(.bottom, 12)
-        .background(
-            LinearGradient(colors: [bgBottom.opacity(0.0), bgBottom.opacity(0.95)], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-        )
     }
 
-    private struct PillButtonStyle: ButtonStyle {
-        let background: Color
-        let foreground: Color
-        func makeBody(configuration: Configuration) -> some View {
-            configuration.label
-                .font(.custom("AvenirNext-DemiBold", size: 14))
-                .padding(.vertical, 10)
-                .padding(.horizontal, 16)
-                .background(background.opacity(configuration.isPressed ? 0.85 : 1.0))
-                .foregroundStyle(foreground)
-                .clipShape(Capsule())
+    private func alertMessage(for alert: ActiveAlert) -> String {
+        switch alert {
+        case .deleteSelected: return L10n.t(.deleteSelectedMessage, lang: settings.language)
+        case .resetAll:       return L10n.t(.resetAllMessage,       lang: settings.language)
+        case .scanEmpty:      return L10n.t(.scanEmptyMessage,      lang: settings.language)
+        case .scanFailed:     return L10n.t(.scanFailedMessage,     lang: settings.language)
         }
     }
 
@@ -378,67 +272,10 @@ struct ContentView: View {
 
     private func exportCSV() {
         guard !store.cards.isEmpty else { return }
-        let csv = makeCSV(cards: store.cards)
-        let fileName = "business_cards_\(Int(Date().timeIntervalSince1970)).csv"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         do {
-            try csv.write(to: url, atomically: true, encoding: .utf8)
-            exportItem = ExportItem(url: url)
+            exportItem = ExportItem(url: try CSVExporter.writeTemporaryFile(cards: store.cards, lang: settings.language))
         } catch {
             print("CSV write error: \(error)")
-        }
-    }
-
-    private func makeCSV(cards: [BusinessCard]) -> String {
-        func escape(_ s: String) -> String {
-            if s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r") {
-                return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
-            }
-            return s
-        }
-        let lang = settings.language
-        let headers = [L10n.t(.name, lang: lang), L10n.t(.company, lang: lang),
-                       L10n.t(.address, lang: lang), L10n.t(.phone, lang: lang),
-                       L10n.t(.email, lang: lang), L10n.t(.timeZone, lang: lang)]
-        var rows = [headers.map(escape).joined(separator: ",")]
-        for c in cards {
-            let phones = c.phones.map(\.number).joined(separator: " / ")
-            rows.append([c.name, c.company, c.address, phones, c.email, c.timeZoneCode]
-                .map(escape).joined(separator: ","))
-        }
-        // UTF-8 BOM + CRLF for Excel compatibility
-        return "\u{FEFF}" + rows.joined(separator: "\r\n")
-    }
-
-    // MARK: - Timezone badge (UI only)
-
-    private struct TimeZoneBadge {
-        let text: String
-        let color: Color
-    }
-
-    private var currentTimeZoneBadge: TimeZoneBadge? {
-        guard !currentCard.timeZoneCode.isEmpty else { return nil }
-        return TimeZoneBadge(text: currentCard.timeZoneCode, color: timeZoneColor(for: currentCard.timeZoneCode))
-    }
-
-    private func timeZoneBadge(_ badge: TimeZoneBadge) -> some View {
-        Text(badge.text)
-            .font(.custom("AvenirNext-DemiBold", size: 12))
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
-            .background(badge.color.opacity(0.18))
-            .foregroundStyle(badge.color)
-            .clipShape(Capsule())
-    }
-
-    private func timeZoneColor(for code: String) -> Color {
-        switch code {
-        case "PST": return .red
-        case "MST": return .blue
-        case "CST": return .green
-        case "EST": return Color(red: 0.95, green: 0.78, blue: 0.15)
-        default:    return .gray
         }
     }
 }
