@@ -35,6 +35,9 @@ struct L10n {
         case allCompanies, allTimeZones
         case groupThisWeek, groupEarlier, countSuffix, localTime
         case sortTitle, sortNewest, sortName, sortCompany
+
+        // Selection mode (02)
+        case selectedCount, tapToToggle, selectAll, exportSelectedCSV, undoDeletedManyMessage, deleteCountTitle
     }
 
     /// Formats a key that contains %d / %@ placeholders.
@@ -117,6 +120,13 @@ struct L10n {
             case .sortNewest: return "新しい順"
             case .sortName: return "名前順"
             case .sortCompany: return "会社順"
+
+            case .selectedCount: return "%d 件を選択中"
+            case .tapToToggle: return "タップで選択を切り替え"
+            case .selectAll: return "すべて選択"
+            case .exportSelectedCSV: return "CSVで書き出す"
+            case .undoDeletedManyMessage: return "%d 件を削除しました"
+            case .deleteCountTitle: return "%d 件を削除しますか？"
             }
             
         case .english, .system:
@@ -185,6 +195,13 @@ struct L10n {
             case .sortNewest: return "Newest first"
             case .sortName: return "By name"
             case .sortCompany: return "By company"
+
+            case .selectedCount: return "%d selected"
+            case .tapToToggle: return "Tap to toggle"
+            case .selectAll: return "Select all"
+            case .exportSelectedCSV: return "Export CSV"
+            case .undoDeletedManyMessage: return "%d cards deleted"
+            case .deleteCountTitle: return "Delete %d cards?"
             }
         }
     }

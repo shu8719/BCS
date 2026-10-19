@@ -11,6 +11,13 @@ struct CardListView: View {
     @State private var showSortDialog = false
     @State private var showCompanyDialog = false
     @State private var showZoneDialog = false
+    @State private var confirmDeleteSelected = false
+    @State private var exportItem: ExportItem?
+    
+    private struct ExportItem: Identifiable {
+        let id = UUID()
+        let url: URL
+    }
     
     // Scan flow placeholder (replaced by ScanFlow in the scan-result task).
     @State private var showScanner = false
@@ -30,10 +37,15 @@ struct CardListView: View {
                 
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {
-                        topBar
-                        SearchBar(text: $query.search, placeholder: L10n.t(.searchPlaceholder, lang: lang))
-                            .padding(.horizontal, 16)
-                        filterChips
+                        if isSelecting {
+                            selectionTopBar
+                            selectionHeader
+                        } else {
+                            topBar
+                            SearchBar(text: $query.search, placeholder: L10n.t(.searchPlaceholder, lang: lang))
+                                .padding(.horizontal, 16)
+                            filterChips
+                        }
                         listBody
                         Color.clear.frame(height: 96)
                     }
@@ -58,7 +70,19 @@ struct CardListView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
             .safeAreaInset(edge: .bottom) {
-                if store.undoState != nil { undoBar }
+                VStack(spacing: 0) {
+                    if store.undoState != nil { undoBar }
+                    if isSelecting { selectionBottomBar }
+                }
+            }
+            .confirmationDialog(L10n.t(.deleteCountTitle, lang: lang, selected.count),
+                                isPresented: $confirmDeleteSelected, titleVisibility: .visible) {
+                Button(L10n.t(.deleteAction, lang: lang), role: .destructive) { deleteSelected() }
+                Button(L10n.t(.cancel, lang: lang), role: .cancel) {}
+            }
+            .sheet(item: $exportItem) { item in
+                ShareSheet(items: [item.url])
+                    .onDisappear { try? FileManager.default.removeItem(at: item.url) }
             }
             .animation(.easeInOut(duration: 0.2), value: store.undoState != nil)
             .navigationDestination(for: UUID.self) { id in
@@ -103,6 +127,72 @@ struct CardListView: View {
                 Text(alert == .failed ? L10n.t(.scanFailedMessage, lang: lang) : L10n.t(.scanEmptyMessage, lang: lang))
             }
         }
+    }
+    
+    // MARK: - Selection mode (02)
+    
+    private var selectionTopBar: some View {
+        HStack(spacing: 4) {
+            IconButton(.close) { exitSelection() }
+            Text(L10n.t(.selectedCount, lang: lang, selected.count))
+                .textStyle(.titleLarge)
+                .foregroundStyle(M3.onSurface)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            IconButton(.download) { exportSelected() }
+            IconButton(.delete) { confirmDeleteSelected = true }
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 8)
+    }
+    
+    private var selectionHeader: some View {
+        HStack {
+            Text(L10n.t(.tapToToggle, lang: lang))
+                .textStyle(.bodyMedium)
+                .foregroundStyle(M3.onSurfaceVariant)
+            Spacer()
+            BCSButton(L10n.t(.selectAll, lang: lang), style: .text) {
+                selected = Set(CardListFilter.apply(query, to: store.cards).map(\.id))
+            }
+        }
+        .padding(.leading, 20)
+        .padding(.trailing, 8)
+    }
+    
+    private var selectionBottomBar: some View {
+        HStack(spacing: 12) {
+            BCSButton(L10n.t(.exportSelectedCSV, lang: lang), icon: .download, style: .tonal, fullWidth: true) {
+                exportSelected()
+            }
+            BCSButton(L10n.t(.deleteAction, lang: lang), icon: .delete, style: .danger, fullWidth: true) {
+                confirmDeleteSelected = true
+            }
+            .disabled(selected.isEmpty)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
+        .background(M3.surfaceContainer.ignoresSafeArea())
+    }
+    
+    private func exitSelection() {
+        isSelecting = false
+        selected = []
+    }
+    
+    private func exportSelected() {
+        let cards = store.cards.filter { selected.contains($0.id) }
+        guard !cards.isEmpty else { return }
+        do {
+            exportItem = ExportItem(url: try CSVExporter.writeTemporaryFile(cards: cards, lang: lang))
+        } catch {
+            print("CSV write error: \(error)")
+        }
+    }
+    
+    private func deleteSelected() {
+        store.delete(ids: selected)
+        exitSelection()
     }
     
     // MARK: - Top bar / chips
@@ -237,8 +327,9 @@ struct CardListView: View {
     
     private func undoMessage(for operation: CardStore.UndoOperation) -> String {
         switch operation {
-        case .deleteSingle, .deleteMany: return L10n.t(.undoDeletedMessage, lang: lang)
-        case .deleteAll:                 return L10n.t(.undoResetMessage, lang: lang)
+        case .deleteSingle:          return L10n.t(.undoDeletedMessage, lang: lang)
+        case .deleteMany(let count): return L10n.t(.undoDeletedManyMessage, lang: lang, count)
+        case .deleteAll:             return L10n.t(.undoResetMessage, lang: lang)
         }
     }
 }
