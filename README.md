@@ -11,7 +11,7 @@ iPhone で名刺を撮るだけで、氏名・会社・電話・メール・住�
 
 ## 背景
 
-もらった名刺が増えすぎて管理できない、営業先が米国の 4 つの時間帯にまたがっていて電話のタイミングを毎回調べている、という 2 つの困りごとが出発点です。
+名刺が増えて管理しきれなくなったことと、取引先が米国の 4 つの時間帯にまたがっていて、電話をかける前に毎回相手の現地時刻を調べていたことから作りました。
 
 - 名刺は撮るだけ。項目分けはアプリが行い、人は確認するだけ
 - 住所の郵便番号（または電話の市外局番）から時間帯を自動判定し、一覧に **相手の現地時刻** を出す
@@ -21,17 +21,13 @@ iPhone で名刺を撮るだけで、氏名・会社・電話・メール・住�
 
 ## 画面
 
-> シミュレータ（iPhone 17）で、架空のサンプル名刺 2 枚を「写真から選ぶ」で読み込んで撮影しました。撮影は UI テスト（`ReadmeScreenshotTour`）で自動化しています。
-
-| 一覧 | スキャンメニュー | 複数選択 |
-|:--:|:--:|:--:|
-| <img src="docs/screens/01_list.png" width="230"> | <img src="docs/screens/01b_scan_menu.png" width="230"> | <img src="docs/screens/02_select.png" width="230"> |
-| 検索・要確認 / 時間帯の絞り込み、今週 / それ以前のグループ、現地時刻 | FAB が閉じるボタンに変形し、「写真から選ぶ」「カメラでスキャン」が展開 | 長押しで選択モード。選んだ名刺を CSV 書き出し / 削除 |
-
-| 詳細 | 編集 | 読み取り結果 | 設定 |
+| 一覧 | スキャンメニュー | 複数選択 | 詳細 |
 |:--:|:--:|:--:|:--:|
-| <img src="docs/screens/03_detail.png" width="180"> | <img src="docs/screens/04_edit.png" width="180"> | <img src="docs/screens/06_scan_result.png" width="180"> | <img src="docs/screens/07_settings.png" width="180"> |
-| 現地時刻と日本との時差、電話 / メール / 地図へのクイックアクション、項目のコピー。要確認の項目があればバナーと読み取り元を表示 | Outlined フィールドと自動判定したタイムゾーンの根拠 | スキャン直後の確認画面。保存するまで永続化しない | 言語切替、CSV 一括出力、全削除（DEBUG ビルドでは精度評価用の書き出しも） |
+| <img src="docs/screens/01_list.png" width="180"> | <img src="docs/screens/01b_scan_menu.png" width="180"> | <img src="docs/screens/02_select.png" width="180"> | <img src="docs/screens/03_detail.png" width="180"> |
+
+| 編集 | 読み取り結果 | 設定 |
+|:--:|:--:|:--:|
+| <img src="docs/screens/04_edit.png" width="180"> | <img src="docs/screens/06_scan_result.png" width="180"> | <img src="docs/screens/07_settings.png" width="180"> |
 
 ---
 
@@ -50,7 +46,7 @@ iPhone で名刺を撮るだけで、氏名・会社・電話・メール・住�
 
 ---
 
-## 技術的なポイント
+## 工夫した点
 
 ### 1. OCR 後の多段パーサー
 
