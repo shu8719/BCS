@@ -19,7 +19,7 @@ struct CardListView: View {
     }
     
     @State private var flow = ScanFlow()
-    @State private var showScanMenu = false
+    @State private var fabMenuOpen = false
     
     private var lang: AppSettings.Language { settings.language }
     
@@ -47,9 +47,14 @@ struct CardListView: View {
                 .scrollDismissesKeyboard(.interactively)
                 
                 if !isSelecting {
-                    ScanFAB(label: L10n.t(.scan, lang: lang)) { showScanMenu = true }
-                        .padding(.trailing, 16)
-                        .padding(.bottom, 16)
+                    ScanFABMenu(
+                        isOpen: $fabMenuOpen,
+                        label: L10n.t(.scan, lang: lang),
+                        photoLabel: L10n.t(.scanFromPhoto, lang: lang),
+                        cameraLabel: L10n.t(.scanWithCamera, lang: lang),
+                        onPhoto: { flow.startPhotoPicker() },
+                        onCamera: { flow.startCamera() }
+                    )
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -84,10 +89,6 @@ struct CardListView: View {
                 ForEach(USTimeZone.allCases, id: \.self) { zone in
                     Button(zone.rawValue) { query.zone = zone }
                 }
-            }
-            .confirmationDialog(L10n.t(.scan, lang: lang), isPresented: $showScanMenu, titleVisibility: .hidden) {
-                Button(L10n.t(.scanWithCamera, lang: lang)) { flow.startCamera() }
-                Button(L10n.t(.scanFromPhoto, lang: lang)) { flow.startPhotoPicker() }
             }
             .scanFlowPresentation(flow)
         }
@@ -166,7 +167,7 @@ struct CardListView: View {
             BrandWordmark()
             Spacer(minLength: 10)
             IconButton(.sort) { showSortDialog = true }
-            IconButton(.checklist) { isSelecting = true }
+            IconButton(.checklist) { fabMenuOpen = false; isSelecting = true }
         }
         .padding(.leading, 16)
         .padding(.trailing, 4)

@@ -176,7 +176,7 @@ struct L10n {
             case .retake: return "撮り直す"
             case .saveCard: return "保存する"
             case .scanWithCamera: return "カメラでスキャン"
-            case .scanFromPhoto: return "写真から"
+            case .scanFromPhoto: return "写真から選ぶ"
             case .tzFromZipShort: return "郵便番号 %@ からタイムゾーンを判定"
             case .tzFromAreaCodeShort: return "市外局番 %@ からタイムゾーンを判定"
 
@@ -295,7 +295,7 @@ struct L10n {
             case .retake: return "Retake"
             case .saveCard: return "Save"
             case .scanWithCamera: return "Scan with camera"
-            case .scanFromPhoto: return "From photo"
+            case .scanFromPhoto: return "Choose photo"
             case .tzFromZipShort: return "Time zone from ZIP %@"
             case .tzFromAreaCodeShort: return "Time zone from area code %@"
 
