@@ -14,7 +14,6 @@ struct SettingsView: View {
     }
     
     #if DEBUG
-    @State private var flow = ScanFlow()
     @State private var fixtureSource: CardFixture.Source = .paper
     @State private var showSourceDialog = false
     @State private var fixtureExport: ExportItem?
@@ -67,7 +66,6 @@ struct SettingsView: View {
             Text(L10n.t(.resetAllMessage, lang: lang))
         }
         #if DEBUG
-        .scanFlowPresentation(flow)
         .confirmationDialog("フィクスチャの由来", isPresented: $showSourceDialog, titleVisibility: .visible) {
             ForEach(CardFixture.Source.allCases.filter { $0 != .synthetic }) { source in
                 Button(sourceLabel(source)) { fixtureSource = source }
@@ -144,9 +142,6 @@ struct SettingsView: View {
     
     private var developerGroup: some View {
         GroupedRows(cornerRadius: 20) {
-            SettingsRow(icon: .image, title: "写真から OCR してパース", chevron: true) {
-                flow.startPhotoPicker()
-            }
             SettingsRow(icon: .code, title: "フィクスチャの由来", subtitle: sourceLabel(fixtureSource), chevron: true) {
                 showSourceDialog = true
             }
