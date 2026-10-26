@@ -66,11 +66,10 @@ iPhone の写真に保存し、「スキャン」→「写真から選ぶ」で�
 
 | 分類 | 技術 |
 | --- | --- |
-| 言語 / UI | Swift 5 / SwiftUI（iOS 17 以降） |
-| 文字認識 | Vision（`VNRecognizeTextRequest`）/ VisionKit の書類カメラ |
-| データ保存 | 端末内の JSON ファイル |
-| 時間帯の判定 | 米国の郵便番号・市外局番の対応表（CSV をアプリに同梱） |
-| デザイン | Figma → Asset Catalog（色・アイコン） |
+| 言語 / UI | Swift / SwiftUI（iOS 17 以降） |
+| 文字認識 | Vision（`VNRecognizeTextRequest`）/ VisionKit（書類カメラ） |
+| データ保存 | Codable + 端末内の JSON ファイル |
+| デザイン | Figma / Asset Catalog |
 | テスト | XCTest / XCUITest |
 
 サーバーや外部ライブラリを使わず、Apple 標準のフレームワークだけで動く構成にしています。
