@@ -69,7 +69,7 @@ iPhone の写真に保存し、「スキャン」→「写真から選ぶ」で�
 | 言語 / UI | Swift / SwiftUI（iOS 17 以降） |
 | 文字認識 | Vision（`VNRecognizeTextRequest`）/ VisionKit（書類カメラ） |
 | データ保存 | Codable + 端末内の JSON ファイル |
-| デザイン | Figma / Asset Catalog |
+| デザイン | Figma |
 | テスト | XCTest / XCUITest |
 
 サーバーや外部ライブラリを使わず、Apple 標準のフレームワークだけで動く構成にしています。
